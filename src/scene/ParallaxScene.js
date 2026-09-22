@@ -430,7 +430,12 @@ export class ParallaxScene {
       this.sky.setAudioLevel(0);
     }
 
-    this.flight.update(dt);
+    // オープニングの「タップして開始」中は専用キービジュアル(#tc-open)が画面全体を
+    // 覆っていてシーンは見えていないが、それでも毎フレーム update は走り続けるため、
+    // 読み込みに時間がかかる/タップまで時間が空くとワールドがこっそり進んでしまい、
+    // 開始した瞬間には既に少し先の状態になって見える不具合があった(#開始時に進んでる)。
+    // 見えていない間は前進させない。
+    if (this.started) this.flight.update(dt);
     const worldX = this.flight.worldX;
     const y = this.flight.y;
     const vy = this.flight.vy;
