@@ -170,7 +170,7 @@ const CSS = `
 #tc-ending.tc-in #tc-again { opacity: 1; }
 
 #tc-rotate {
-  position: absolute; inset: 0; display: none; flex-direction: column; gap: 18px;
+  position: absolute; inset: 0; z-index: 30; display: none; flex-direction: column; gap: 18px;
   align-items: center; justify-content: center; pointer-events: auto; text-align: center; padding: 24px;
   background: linear-gradient(#1E3E63, #0E2038);
 }
