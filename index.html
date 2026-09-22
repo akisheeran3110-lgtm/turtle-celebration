@@ -20,8 +20,11 @@
       }
       * {
         /* 長押しで文字選択の「コピー/検索」メニューが出たり、iOSの
-           画像保存コールアウトが出たりしないように(#タップでcopy/pasteが出る) */
+           画像保存コールアウトが出たり、Android Chromeで虫眼鏡付きの
+           テキスト選択カーソルが出たりしないように(#タップでcopy/pasteが出る) */
         -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
         -webkit-tap-highlight-color: transparent;

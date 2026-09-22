@@ -72,6 +72,12 @@ const hibiscusGlob = import.meta.glob('./decorations/deco-hibiscus-*.png', {
   import: 'default',
 });
 
+// 長押しでのテキスト選択(Android Chromeの虫眼鏡付きカーソル等)や右クリック/
+// 長押しの文脈メニューを、CSS(user-select 等)だけでは塞ぎきれない場合があるため
+// イベントレベルでも止める(#タップで虫眼鏡が出る・タップが選択に奪われて反応しない)。
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('selectstart', (e) => e.preventDefault());
+
 async function bootstrap() {
   const bgm = new BgmPlayer(configData.audio, configData.audioReactive);
 
