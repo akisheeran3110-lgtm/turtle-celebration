@@ -56,9 +56,12 @@ const CSS = `
 #tc-start {
   opacity: 0; transition: opacity .5s ease;
   font-size: clamp(14px, 3.4vw, 18px); letter-spacing: .32em; color: #FCF4E0;
-  text-shadow: 0 2px 16px rgba(6,10,26,1); animation: tc-pulse 2.6s ease-in-out infinite;
+  text-shadow: 0 2px 16px rgba(6,10,26,1);
 }
-#tc-start.tc-ready { opacity: 1; }
+/* #タップしても反応しない: animationはCSSの静的opacity:0より優先されてしまうため、
+   ready前から常時 "Tap to Begin" が薄く点滅して見えてタップを誘ってしまっていた。
+   アニメーションもready後だけ動くようにする。 */
+#tc-start.tc-ready { opacity: 1; animation: tc-pulse 2.6s ease-in-out infinite; }
 #tc-hint {
   margin-top: 1.4vh; font-size: clamp(10px, 2.3vw, 12px); letter-spacing: .16em;
   opacity: 0; transition: opacity .5s ease .1s; color: #E9DFC6;
@@ -75,8 +78,14 @@ const CSS = `
   opacity: 0; transition: opacity 1s ease;
 }
 #tc-ctrl-hint.tc-show { opacity: .82; }
+#tc-loading-label {
+  margin-top: 1.4vh; margin-bottom: 1vh; font-size: clamp(10px, 2.3vw, 12px); letter-spacing: .22em;
+  color: #E9DFC6; text-shadow: 0 1px 10px rgba(8,14,34,.9); transition: opacity .4s ease;
+}
+#tc-loading-label.tc-nudge { animation: tc-nudge .4s ease; }
+@keyframes tc-nudge { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 #tc-bar {
-  margin-top: 2.4vh; width: min(170px, 46vw); height: 2px; border-radius: 2px;
+  width: min(220px, 58vw); height: 4px; border-radius: 2px;
   background: rgba(244,234,212,.25); overflow: hidden; transition: opacity .4s ease;
 }
 #tc-bar > i { display: block; height: 100%; width: 0%; background: #E7B778; transition: width .3s ease; }
@@ -195,6 +204,7 @@ export function createUI({ title = 'Turtle Celebration', heroImageUrl, endingIma
       <div id="tc-content">
         <div id="tc-start">Tap to Begin</div>
         <div id="tc-hint">Tap right to rise · left to dive</div>
+        <div id="tc-loading-label">Loading… 0%</div>
         <div id="tc-bar"><i></i></div>
       </div>
     </div>
@@ -215,6 +225,7 @@ export function createUI({ title = 'Turtle Celebration', heroImageUrl, endingIma
   const open = root.querySelector('#tc-open');
   const bar = root.querySelector('#tc-bar > i');
   const barWrap = root.querySelector('#tc-bar');
+  const loadingLabel = root.querySelector('#tc-loading-label');
   const startEl = root.querySelector('#tc-start');
   const hintEl = root.querySelector('#tc-hint');
   const muteBtn = root.querySelector('#tc-mute');
@@ -229,14 +240,26 @@ export function createUI({ title = 'Turtle Celebration', heroImageUrl, endingIma
   let assetsReady = false;
   let starting = false;
   const begin = async () => {
-    if (!assetsReady || starting) return;
+    if (!assetsReady) {
+      // 読み込み中にタップされた: 何も起きないと壊れてると誤解されるので、
+      // 「まだ読み込み中」と分かるよう一瞬点滅させて知らせる(#タップしても反応しない)
+      loadingLabel.classList.remove('tc-nudge');
+      void loadingLabel.offsetWidth;
+      loadingLabel.classList.add('tc-nudge');
+      return;
+    }
+    if (starting) return;
     starting = true;
     if (onStart) await onStart();
     open.classList.add('tc-hidden');
     muteBtn.classList.add('tc-visible');
     setTimeout(() => open.remove(), 1000);
   };
+  // pointerdown 単独だと、読み込み直後の最初のタップが iOS Safari 側の
+  // アドレスバー収納ジェスチャーに食われて反応しないことがあるため、
+  // click も併用して取りこぼしを減らす(#最初の画面でタップしても変わらない)
   open.addEventListener('pointerdown', begin);
+  open.addEventListener('click', begin);
 
   muteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -247,11 +270,14 @@ export function createUI({ title = 'Turtle Celebration', heroImageUrl, endingIma
 
   return {
     setProgress(p) {
-      bar.style.width = `${Math.round(clamp01(p) * 100)}%`;
+      const pct = Math.round(clamp01(p) * 100);
+      bar.style.width = `${pct}%`;
+      loadingLabel.textContent = `Loading… ${pct}%`;
     },
     ready() {
       assetsReady = true;
       barWrap.style.opacity = '0';
+      loadingLabel.style.opacity = '0';
       startEl.classList.add('tc-ready');
       hintEl.classList.add('tc-ready');
     },
