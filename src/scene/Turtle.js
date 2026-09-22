@@ -96,8 +96,16 @@ export class Turtle {
     return sprite;
   }
 
-  applyScale() {
-    this._baseScale = this.config.sizePx / CANVAS_W;
+  /**
+   * @param {number} [screenHeight] 実際の画面の高さ。config.sizeRatio があれば
+   *   これに掛けて画面サイズに比例した大きさにする(#スマホだと亀がでかい:
+   *   固定px指定だと画面が小さい端末ほど相対的に巨大に見えてしまう)。
+   *   未指定(コンストラクタ初回呼び出し時など)は旧来の固定px(sizePx)にフォールバック。
+   */
+  applyScale(screenHeight) {
+    const ratio = this.config.sizeRatio;
+    const px = ratio != null && screenHeight ? screenHeight * ratio : (this.config.sizePx ?? 220);
+    this._baseScale = px / CANVAS_W;
     this.container.scale.set(this._baseScale);
   }
 

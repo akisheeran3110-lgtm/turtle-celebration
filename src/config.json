@@ -764,7 +764,7 @@
     "scale": 2
   },
   "turtle": {
-    "sizePx": 220,
+    "sizeRatio": 0.344,
     "spawnXRatio": 0.4,
     "flap": {
       "frontPeriodSec": 1.1,
@@ -830,10 +830,10 @@
   "orbs": {
     "spawnRatePerSecond": 0.5,
     "color": "0xFFF3CC",
-    "glowRadiusPx": 18,
-    "coreRadiusPx": 6,
+    "glowRadiusRatio": 0.028,
+    "coreRadiusRatio": 0.0094,
     "driftSpeedRatioPerSec": 0.05,
-    "collectRadiusPx": 54,
+    "collectRadiusRatio": 0.084,
     "yBandRatio": [
       0.14,
       0.62

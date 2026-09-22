@@ -78,10 +78,14 @@ export class OrbField {
     const wrap = new Container();
     const glow = new Sprite(orbGlowTexture());
     glow.anchor.set(0.5);
-    glow.width = glow.height = this.config.glowRadiusPx * 2;
+    // 固定pxだと画面が小さい端末(スマホ)ほど相対的に巨大に見えるので、
+    // 比率指定(*Ratio)があれば画面の高さに比例させる(#スマホだとオーブがでかい)
+    const glowR = this.config.glowRadiusRatio != null ? this._h * this.config.glowRadiusRatio : (this.config.glowRadiusPx ?? 18);
+    const coreR = this.config.coreRadiusRatio != null ? this._h * this.config.coreRadiusRatio : (this.config.coreRadiusPx ?? 6);
+    glow.width = glow.height = glowR * 2;
     glow.tint = toHexNumber(this.config.color);
     const core = new Graphics();
-    core.circle(0, 0, this.config.coreRadiusPx).fill({ color: 0xffffff, alpha: 0.95 });
+    core.circle(0, 0, coreR).fill({ color: 0xffffff, alpha: 0.95 });
     wrap.addChild(glow, core);
     this.container.addChild(wrap);
     return { wrap, glow, core, x: 0, y: 0, vx: 0, seed: 0, collected: false, t: 0 };
@@ -161,7 +165,8 @@ export class OrbField {
       if (this._chainTimer <= 0) this._chainLevel = 0;
     }
 
-    const rC = this.config.collectRadiusPx * this._rCScale;
+    const collectR = this.config.collectRadiusRatio != null ? this._h * this.config.collectRadiusRatio : (this.config.collectRadiusPx ?? 54);
+    const rC = collectR * this._rCScale;
     for (let i = this.orbs.length - 1; i >= 0; i--) {
       const o = this.orbs[i];
       o.t += dt;

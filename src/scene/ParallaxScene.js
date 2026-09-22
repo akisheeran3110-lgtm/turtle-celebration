@@ -366,7 +366,7 @@ export class ParallaxScene {
     this.foliage?.resize(width, height);
     this.grain?.resize(width, height);
     this.flight.resize(width, height, waterLineY);
-    this.turtle.applyScale();
+    this.turtle.applyScale(height);
 
     this._anchorX = width * this.config.turtle.spawnXRatio;
     this.turtle.setPosition(this._anchorX, this.flight.y);
