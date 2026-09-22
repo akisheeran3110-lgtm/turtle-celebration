@@ -105,8 +105,12 @@ export class SeaLayer {
 
       const topY = lineY + seaH * (band.topRatio + off);
       const phase = -(worldX * band.scroll * 0.05);
-      const k = TAU / band.wavePeriodPx;
-      const amp = band.waveAmpPx * waveMult;
+      // 固定pxだと画面が小さい端末ほど波が相対的に大きく/密に見えるので、
+      // 比率指定(*Ratio)があれば画面サイズに比例させる
+      const wavelenPx = band.wavePeriodRatio != null ? w * band.wavePeriodRatio : band.wavePeriodPx;
+      const k = TAU / wavelenPx;
+      const ampPx = band.waveAmpRatio != null ? h * band.waveAmpRatio : band.waveAmpPx;
+      const amp = ampPx * waveMult;
 
       g.moveTo(-margin, h + 4);
       g.lineTo(-margin, topY + Math.sin(-margin * k + phase) * amp);

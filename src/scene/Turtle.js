@@ -109,6 +109,12 @@ export class Turtle {
     this.container.scale.set(this._baseScale);
   }
 
+  /** 現在の実際の画面上の見た目の横幅(px)。呼び出し側が config.turtle.sizePx を
+   *  直接読むと sizeRatio 併用時に不整合になるので、これを参照させる。 */
+  get widthPx() {
+    return this._baseScale * CANVAS_W;
+  }
+
   /**
    * 潜水演出: 画面全体ではなく亀のパーツだけを水色に沈める(#水中感は亀の色で)。
    * @param {number} submersion 0(水面上)〜1(深く潜っている)

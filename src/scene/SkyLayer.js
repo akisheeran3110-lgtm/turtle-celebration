@@ -240,7 +240,9 @@ export class SkyLayer {
   }
 
   _drawCelestial(isMoon, color) {
-    const r = this.timeConfig.celestial.radiusPx;
+    const cc = this.timeConfig.celestial;
+    // 固定pxだと画面が小さい端末ほど相対的に巨大に見えるので、画面の高さに比例させる
+    const r = cc.radiusRatio != null ? this._h * cc.radiusRatio : cc.radiusPx;
     this._sunRadius = r;
     this._isMoonNow = isMoon;
     this._celestialColor = color;

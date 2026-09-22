@@ -496,7 +496,7 @@ export class ParallaxScene {
       y: turtleY,
       vy: ov ? 0 : vy,
       holding: !ov && this.flight.verticalInput > 0,
-      sizePx: this.config.turtle.sizePx,
+      sizePx: this.turtle.widthPx,
     });
 
     // --- 潜水 ---
@@ -513,7 +513,7 @@ export class ParallaxScene {
       tier: ov ? 0 : this.flight.chargeTier,
       norm: this.flight.chargeNorm,
       leapTier: ov ? 0 : this.flight.leapTier,
-      sizePx: this.config.turtle.sizePx,
+      sizePx: this.turtle.widthPx,
     });
     if (!ov && this.flight.leapTier > 0) {
       this.hooks.sfx?.leap?.(this.flight.leapTier);
@@ -601,7 +601,7 @@ export class ParallaxScene {
     if (sh.enabled) {
       this.turtleShadow.visible = submersion < 0.9 && !ov;
       this.turtleShadow.position.set(turtleX, waterLineY + 4);
-      this.turtleShadow.width = this.config.turtle.sizePx * (0.5 + altitude * 0.7);
+      this.turtleShadow.width = this.turtle.widthPx * (0.5 + altitude * 0.7);
       this.turtleShadow.height = this.turtleShadow.width * 0.26;
       this.turtleShadow.alpha = sh.maxAlpha * (1 - altitude) * (1 - submersion);
     }

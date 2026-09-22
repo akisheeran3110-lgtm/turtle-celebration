@@ -110,7 +110,7 @@
       }
     ],
     "celestial": {
-      "radiusPx": 40,
+      "radiusRatio": 0.0625,
       "arcMarginRatio": 0.16,
       "arcHeightRatio": 0.62,
       "horizonRatio": 0.62,
@@ -137,8 +137,8 @@
         "topRatio": 0.0,
         "toneToWhite": 0.42,
         "toneToDeep": 0.0,
-        "waveAmpPx": 5,
-        "wavePeriodPx": 260,
+        "waveAmpRatio": 0.0078,
+        "wavePeriodRatio": 0.2203,
         "scroll": 0.95,
         "foam": true
       },
@@ -146,8 +146,8 @@
         "topRatio": 0.05,
         "toneToWhite": 0.2,
         "toneToDeep": 0.0,
-        "waveAmpPx": 7,
-        "wavePeriodPx": 330,
+        "waveAmpRatio": 0.0109,
+        "wavePeriodRatio": 0.2797,
         "scroll": 0.78,
         "foam": true
       },
@@ -155,8 +155,8 @@
         "topRatio": 0.12,
         "toneToWhite": 0.0,
         "toneToDeep": 0.0,
-        "waveAmpPx": 9,
-        "wavePeriodPx": 420,
+        "waveAmpRatio": 0.0141,
+        "wavePeriodRatio": 0.3559,
         "scroll": 0.6,
         "foam": false
       },
@@ -164,8 +164,8 @@
         "topRatio": 0.22,
         "toneToWhite": 0.0,
         "toneToDeep": 0.32,
-        "waveAmpPx": 11,
-        "wavePeriodPx": 540,
+        "waveAmpRatio": 0.0172,
+        "wavePeriodRatio": 0.4576,
         "scroll": 0.42,
         "foam": false
       },
@@ -173,8 +173,8 @@
         "topRatio": 0.36,
         "toneToWhite": 0.0,
         "toneToDeep": 0.62,
-        "waveAmpPx": 13,
-        "wavePeriodPx": 680,
+        "waveAmpRatio": 0.0203,
+        "wavePeriodRatio": 0.5763,
         "scroll": 0.26,
         "foam": false
       }
@@ -208,7 +208,7 @@
       "alpha": 0.72,
       "hazeAmount": 0.42,
       "colorJitter": 0.05,
-      "bobAmplitudePx": 3,
+      "bobAmplitudeRatio": 0.0047,
       "bobPeriodSec": [
         11,
         17
@@ -233,7 +233,7 @@
       "alpha": 0.9,
       "hazeAmount": 0.2,
       "colorJitter": 0.06,
-      "bobAmplitudePx": 5,
+      "bobAmplitudeRatio": 0.0078,
       "bobPeriodSec": [
         9,
         14
@@ -258,7 +258,7 @@
       "alpha": 0.97,
       "hazeAmount": 0.07,
       "colorJitter": 0.07,
-      "bobAmplitudePx": 6,
+      "bobAmplitudeRatio": 0.0094,
       "bobPeriodSec": [
         7,
         12

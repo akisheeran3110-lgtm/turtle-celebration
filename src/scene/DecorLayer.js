@@ -325,7 +325,7 @@ export class DecorLayer {
       if (it.useSprite && it.sp) {
         let sy = it.baseY - scrollY;
         if (this.def.kind === 'cloud' && it.bobPeriod) {
-          sy += Math.sin(this._t * (TAU / it.bobPeriod) + it.phase) * (this.def.bobAmplitudePx ?? 0);
+          sy += Math.sin(this._t * (TAU / it.bobPeriod) + it.phase) * (this.def.bobAmplitudeRatio != null ? this._h * this.def.bobAmplitudeRatio : (this.def.bobAmplitudePx ?? 0));
         }
         it.sp.position.set(screenX, sy);
         it.sp.scale.x = it.spScale * it.flip;
@@ -347,7 +347,7 @@ export class DecorLayer {
         g.rotation = it.rot;
       }
       if (this.def.kind === 'cloud' && it.bobPeriod) {
-        g.position.y += Math.sin(this._t * (TAU / it.bobPeriod) + it.phase) * (this.def.bobAmplitudePx ?? 0);
+        g.position.y += Math.sin(this._t * (TAU / it.bobPeriod) + it.phase) * (this.def.bobAmplitudeRatio != null ? this._h * this.def.bobAmplitudeRatio : (this.def.bobAmplitudePx ?? 0));
       }
     }
   }
