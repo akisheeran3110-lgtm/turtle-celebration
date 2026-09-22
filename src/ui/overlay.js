@@ -250,7 +250,14 @@ export function createUI({ title = 'Turtle Celebration', heroImageUrl, endingIma
     }
     if (starting) return;
     starting = true;
-    if (onStart) await onStart();
+    if (onStart) {
+      // onStart(BGM再生)がiOS Safari等で(オーディオの許可待ちなどにより)
+      // いつまでも解決しないことがあり、それを待ってしまうと画面遷移自体が
+      // 永遠に起きず「タップしても始まらない」ように見える。一定時間で
+      // 見切りをつけて進める(BGM開始のリクエスト自体はこの時点で既にユーザー
+      // 操作の延長で発行済みなので、待たずに進めても再生は裏で続く)。
+      await Promise.race([onStart(), new Promise((resolve) => setTimeout(resolve, 1200))]);
+    }
     open.classList.add('tc-hidden');
     muteBtn.classList.add('tc-visible');
     setTimeout(() => open.remove(), 1000);

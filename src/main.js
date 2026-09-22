@@ -230,7 +230,11 @@ async function bootstrap() {
   // タップ = BGM 再生 + 時間帯サイクル / 生き物の開始
   let inputArmed = false;
   onStart = async () => {
-    await bgm.start();
+    // bgm.start() を待ってからゲーム進行を始めると、iOS Safari 等で音声の
+    // 許可待ちがいつまでも解決しない場合にゲーム自体が永遠に始まらなくなる
+    // (#タップしても始まらない)。BGM開始のリクエストはここで発行しつつ、
+    // ゲーム進行はそれを待たずに即座に始める(再生自体は裏で解決次第始まる)。
+    bgm.start();
     scene.setRunning(true);
     ui.showControlHint();
     ui.showGauge();
