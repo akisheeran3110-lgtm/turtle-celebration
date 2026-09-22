@@ -1,0 +1,1088 @@
+{
+  "world": {
+    "backgroundColor": "0x0d2b3a",
+    "waterLineRatio": 0.62,
+    "coordinateWrapPx": 100000
+  },
+  "flight": {
+    "forwardSpeedRatioPerSec": 0.05,
+    "accelUpRatioPerSec2": 0.85,
+    "accelDownRatioPerSec2": 0.75,
+    "activeDampPerSec": 1.8,
+    "neutralDampPerSec": 1.6,
+    "maxUpSpeedRatioPerSec": 0.4,
+    "maxDownSpeedRatioPerSec": 0.36,
+    "ceilingRatio": 0.11,
+    "maxDiveBelowWaterRatio": 0.29,
+    "boundDecelPerSec": 9,
+    "spawnAboveWaterRatio": 0.3,
+    "diveAccelBoost": 1.9,
+    "maxDiveDownRatioPerSec": 0.62,
+    "chargeMaxSec": 3.0,
+    "chargeMinSec": 0.4,
+    "chargeTierSec": [1, 2, 3],
+    "chargeZoneRatio": 0.06,
+    "leapImpulseByTier": [0.7, 0.82, 0.98, 1.18],
+    "leapDurationSec": 2.6,
+    "breachMaxUpRatio": 1.35,
+    "breachDampPerSec": 0.15,
+    "breachGravityRatio": 0.9,
+    "glideMaxBonus": 0.09,
+    "glideRefHeightRatio": 0.42
+  },
+  "timeOfDay": {
+    "enabled": true,
+    "loop": false,
+    "durationSeconds": 502,
+    "startProgress": 0.0,
+    "phases": [
+      {
+        "name": "dawn",
+        "t": 0.0
+      },
+      {
+        "name": "midday",
+        "t": 0.14
+      },
+      {
+        "name": "sunset",
+        "t": 0.48
+      },
+      {
+        "name": "night",
+        "t": 0.74
+      }
+    ],
+    "gradientStops": [
+      {
+        "t": 0.0,
+        "skyTop": "0xEBA36A",
+        "skyHorizon": "0xF9D3A0",
+        "sea": "0x4F9D95"
+      },
+      {
+        "t": 0.065,
+        "skyTop": "0xEBA36A",
+        "skyHorizon": "0xF9D3A0",
+        "sea": "0x4F9D95"
+      },
+      {
+        "t": 0.16,
+        "skyTop": "0x2E86C6",
+        "skyHorizon": "0x8FD3EC",
+        "sea": "0x17A79C"
+      },
+      {
+        "t": 0.38,
+        "skyTop": "0x2E86C6",
+        "skyHorizon": "0x8FD3EC",
+        "sea": "0x17A79C"
+      },
+      {
+        "t": 0.52,
+        "skyTop": "0xE86B34",
+        "skyHorizon": "0xF6C053",
+        "sea": "0x1E4A63"
+      },
+      {
+        "t": 0.63,
+        "skyTop": "0xC9472A",
+        "skyHorizon": "0xEC8B44",
+        "sea": "0x163B52"
+      },
+      {
+        "t": 0.78,
+        "skyTop": "0x0E1A33",
+        "skyHorizon": "0x24344F",
+        "sea": "0x123A54"
+      },
+      {
+        "t": 0.93,
+        "skyTop": "0x0E1A33",
+        "skyHorizon": "0x24344F",
+        "sea": "0x123A54"
+      },
+      {
+        "t": 1.0,
+        "skyTop": "0xEBA36A",
+        "skyHorizon": "0xF9D3A0",
+        "sea": "0x4F9D95"
+      }
+    ],
+    "celestial": {
+      "radiusPx": 40,
+      "arcMarginRatio": 0.16,
+      "arcHeightRatio": 0.62,
+      "horizonRatio": 0.62,
+      "sunColorDawn": "0xF4A65B",
+      "sunColorMidday": "0xFFE8AE",
+      "sunColorSunset": "0xF4B434",
+      "moonColor": "0xCFDCF2"
+    },
+    "stars": {
+      "count": 110,
+      "color": "0xFFF3CC",
+      "fadeInFrom": 0.64,
+      "fullyVisibleAt": 0.85
+    }
+  },
+  "sky": {
+    "depth": 0.03
+  },
+  "sea": {
+    "depth": 0.9,
+    "speckleCount": 46,
+    "bands": [
+      {
+        "topRatio": 0.0,
+        "toneToWhite": 0.42,
+        "toneToDeep": 0.0,
+        "waveAmpPx": 5,
+        "wavePeriodPx": 260,
+        "scroll": 0.95,
+        "foam": true
+      },
+      {
+        "topRatio": 0.05,
+        "toneToWhite": 0.2,
+        "toneToDeep": 0.0,
+        "waveAmpPx": 7,
+        "wavePeriodPx": 330,
+        "scroll": 0.78,
+        "foam": true
+      },
+      {
+        "topRatio": 0.12,
+        "toneToWhite": 0.0,
+        "toneToDeep": 0.0,
+        "waveAmpPx": 9,
+        "wavePeriodPx": 420,
+        "scroll": 0.6,
+        "foam": false
+      },
+      {
+        "topRatio": 0.22,
+        "toneToWhite": 0.0,
+        "toneToDeep": 0.32,
+        "waveAmpPx": 11,
+        "wavePeriodPx": 540,
+        "scroll": 0.42,
+        "foam": false
+      },
+      {
+        "topRatio": 0.36,
+        "toneToWhite": 0.0,
+        "toneToDeep": 0.62,
+        "waveAmpPx": 13,
+        "wavePeriodPx": 680,
+        "scroll": 0.26,
+        "foam": false
+      }
+    ],
+    "deepColor": "0x081C30",
+    "foamColor": "0xF3FBFF",
+    "frontOffsetRatio": 0.09,
+    "distantOverlapRatio": 0.18
+  },
+  "atmosphere": {
+    "refDepth": 0.72,
+    "maxStrength": 0.55
+  },
+  "decorLayers": [
+    {
+      "id": "cloud-far",
+      "kind": "cloud",
+      "depth": 0.08,
+      "poolSize": 6,
+      "sizeRatio": 0.1035,
+      "spacingRatio": 0.5,
+      "spacingJitter": 0.5,
+      "scaleRange": [
+        0.5,
+        0.95
+      ],
+      "yBandRatio": [
+        0.03,
+        0.09
+      ],
+      "alpha": 0.72,
+      "hazeAmount": 0.42,
+      "colorJitter": 0.05,
+      "bobAmplitudePx": 3,
+      "bobPeriodSec": [
+        11,
+        17
+      ]
+    },
+    {
+      "id": "cloud-mid",
+      "kind": "cloud",
+      "depth": 0.15,
+      "poolSize": 7,
+      "sizeRatio": 0.1437,
+      "spacingRatio": 0.42,
+      "spacingJitter": 0.5,
+      "scaleRange": [
+        0.7,
+        1.2
+      ],
+      "yBandRatio": [
+        0.12,
+        0.19
+      ],
+      "alpha": 0.9,
+      "hazeAmount": 0.2,
+      "colorJitter": 0.06,
+      "bobAmplitudePx": 5,
+      "bobPeriodSec": [
+        9,
+        14
+      ]
+    },
+    {
+      "id": "cloud-near",
+      "kind": "cloud",
+      "depth": 0.22,
+      "poolSize": 6,
+      "sizeRatio": 0.1955,
+      "spacingRatio": 0.5,
+      "spacingJitter": 0.5,
+      "scaleRange": [
+        0.95,
+        1.6
+      ],
+      "yBandRatio": [
+        0.22,
+        0.31
+      ],
+      "alpha": 0.97,
+      "hazeAmount": 0.07,
+      "colorJitter": 0.07,
+      "bobAmplitudePx": 6,
+      "bobPeriodSec": [
+        7,
+        12
+      ]
+    },
+    {
+      "id": "islands",
+      "kind": "island",
+      "depth": 0.3,
+      "poolSize": 8,
+      "sizeRatio": 0.185,
+      "spacingRatio": 0.62,
+      "spacingJitter": 0.55,
+      "scaleRange": [
+        0.55,
+        1.35
+      ],
+      "yBandRatio": [
+        0.6,
+        0.66
+      ],
+      "alpha": 1.0,
+      "colorJitter": 0.06,
+      "spriteChance": 1,
+      "spriteHeightRatio": 0.2,
+      "spriteTintStrength": 0.82
+    },
+    {
+      "id": "reef",
+      "kind": "coral",
+      "depth": 0.66,
+      "poolSize": 5,
+      "sizeRatio": 0.11,
+      "spacingRatio": 2.5,
+      "spacingJitter": 0.6,
+      "scaleRange": [
+        0.6,
+        1.0
+      ],
+      "yBandRatio": [
+        0.8,
+        0.96
+      ],
+      "alpha": 0.96,
+      "colorJitter": 0.1,
+      "rotJitterRad": 0.09,
+      "spriteChance": 1,
+      "coralSpriteHeightRatio": 0.1,
+      "spriteTintStrength": 0.75,
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.35,
+      "depthFadeRangeRatio": 0.3,
+      "waterMarginPx": 8
+    },
+    {
+      "id": "seagrass",
+      "kind": "grass",
+      "depth": 0.66,
+      "poolSize": 15,
+      "sizeRatio": 0.1,
+      "spacingRatio": 0.32,
+      "spacingJitter": 0.6,
+      "scaleRange": [
+        0.55,
+        0.95
+      ],
+      "yBandRatio": [
+        0.78,
+        0.96
+      ],
+      "alpha": 0.96,
+      "colorJitter": 0.1,
+      "softCoralSwayAmpRad": 0.1,
+      "softCoralSwayPeriodSec": [
+        3,
+        5
+      ],
+      "spriteChance": 1,
+      "coralSpriteHeightRatio": 0.1,
+      "grassSpriteTintStrength": 0.35,
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.3,
+      "depthFadeRangeRatio": 0.3,
+      "waterMarginPx": 6
+    }
+  ],
+  "coastalVista": {
+    "depth": 0.5,
+    "firstSpawnSec": [
+      30,
+      60
+    ],
+    "spawnEverySec": [
+      210,
+      340
+    ],
+    "spreadRatio": 0.6,
+    "sandColor": "0xEAD6A6",
+    "nightTint": "0x27384F"
+  },
+  "spriteDecorLayers": [
+    {
+      "id": "reef-critters",
+      "textureKeys": [
+        "crab",
+        "lobster"
+      ],
+      "depth": 0.66,
+      "poolSize": 4,
+      "spacingRatio": 1.7,
+      "spacingJitter": 0.7,
+      "heightRatio": 0.055,
+      "scaleRange": [
+        0.8,
+        1.15
+      ],
+      "yBandRatio": [
+        0.8,
+        0.9
+      ],
+      "anchorY": 1,
+      "flip": true,
+      "nightTint": "0x33455A",
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.25
+    }
+  ],
+  "creatureLayers": [
+    {
+      "id": "airplane",
+      "kind": "airplane",
+      "textureKey": "airplane",
+      "phase": "always",
+      "depth": 0.1,
+      "spawnEverySec": [
+        38,
+        78
+      ],
+      "speedRatioPerSec": 0.085,
+      "heightRatio": 0.095,
+      "scaleRange": [
+        0.72,
+        1.05
+      ],
+      "yBandRatio": [
+        0.1,
+        0.26
+      ],
+      "faceRight": true,
+      "reverseChance": 0.18,
+      "reverseSpeedMult": 1.15
+    },
+    {
+      "id": "yacht",
+      "kind": "yacht",
+      "textureKey": "yacht",
+      "phase": "always",
+      "depth": 0.27,
+      "anchorY": 0.82,
+      "spawnEverySec": [
+        45,
+        90
+      ],
+      "speedRatioPerSec": 0.03,
+      "heightRatio": 0.11,
+      "scaleRange": [
+        0.82,
+        1.08
+      ],
+      "yBandRatio": [
+        0.618,
+        0.624
+      ],
+      "yJitterRatio": 0.003,
+      "nightTint": "0x3E4A66",
+      "reverseChance": 0.15,
+      "reverseSpeedMult": 1.15
+    },
+    {
+      "id": "manta",
+      "kind": "manta",
+      "textureKey": "manta",
+      "phase": "sunset",
+      "depth": 0.55,
+      "spawnEverySec": [
+        22,
+        40
+      ],
+      "speedRatioPerSec": 0.05,
+      "heightRatio": 0.16,
+      "scaleRange": [
+        0.85,
+        1.25
+      ],
+      "yBandRatio": [
+        0.66,
+        0.86
+      ],
+      "nightTint": "0x233348",
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.3,
+      "depthFadeRangeRatio": 0.3
+    },
+    {
+      "id": "fish-teal",
+      "kind": "fish",
+      "textureKey": "fish-teal",
+      "phase": "always",
+      "depth": 0.6,
+      "spawnEverySec": [
+        9,
+        16
+      ],
+      "speedRatioPerSec": 0.055,
+      "heightRatio": 0.05,
+      "scaleRange": [
+        0.65,
+        1.25
+      ],
+      "school": [
+        4,
+        8
+      ],
+      "yBandRatio": [
+        0.66,
+        0.88
+      ],
+      "nightTint": "0x2A3C54",
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.3,
+      "depthFadeRangeRatio": 0.3
+    },
+    {
+      "id": "fish-yellow",
+      "kind": "fish",
+      "textureKey": "fish-yellow",
+      "phase": "midday",
+      "depth": 0.62,
+      "spawnEverySec": [
+        12,
+        20
+      ],
+      "speedRatioPerSec": 0.055,
+      "heightRatio": 0.046,
+      "scaleRange": [
+        0.65,
+        1.15
+      ],
+      "school": [
+        3,
+        7
+      ],
+      "yBandRatio": [
+        0.64,
+        0.85
+      ],
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.3,
+      "depthFadeRangeRatio": 0.3
+    },
+    {
+      "id": "jellyfish",
+      "kind": "jellyfish",
+      "textureKey": "jellyfish",
+      "phase": "night",
+      "depth": 0.58,
+      "glow": true,
+      "spawnEverySec": [
+        7,
+        14
+      ],
+      "speedRatioPerSec": 0.02,
+      "heightRatio": 0.13,
+      "scaleRange": [
+        0.6,
+        1.05
+      ],
+      "yBandRatio": [
+        0.66,
+        0.86
+      ],
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.25,
+      "depthFadeRangeRatio": 0.3
+    },
+    {
+      "id": "bird",
+      "kind": "bird",
+      "textureKey": "bird",
+      "phase": "always",
+      "depth": 0.12,
+      "spawnEverySec": [
+        18,
+        36
+      ],
+      "speedRatioPerSec": 0.075,
+      "heightRatio": 0.05,
+      "scaleRange": [
+        0.7,
+        1.1
+      ],
+      "yBandRatio": [
+        0.06,
+        0.22
+      ]
+    },
+    {
+      "id": "whale",
+      "kind": "whale",
+      "textureKey": "whale",
+      "phase": "always",
+      "depth": 0.35,
+      "spawnEverySec": [
+        100,
+        180
+      ],
+      "speedRatioPerSec": 0.02,
+      "heightRatio": 0.24,
+      "scaleRange": [
+        0.85,
+        1.2
+      ],
+      "yBandRatio": [
+        0.56,
+        0.62
+      ],
+      "nightTint": "0x1B2B44",
+      "sfxAtCenter": true
+    },
+    {
+      "id": "dolphin",
+      "kind": "dolphin",
+      "textureKey": "dolphin",
+      "phase": "always",
+      "depth": 0.4,
+      "spawnEverySec": [
+        20,
+        38
+      ],
+      "speedRatioPerSec": 0.06,
+      "heightRatio": 0.09,
+      "scaleRange": [
+        0.8,
+        1.15
+      ],
+      "yBandRatio": [
+        0.68,
+        0.8
+      ],
+      "nightTint": "0x24354E",
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.45,
+      "depthFadeRangeRatio": 0.2,
+      "sfxAtCenter": true,
+      "reverseChance": 0.15,
+      "reverseSpeedMult": 1.2
+    },
+    {
+      "id": "shark",
+      "kind": "shark",
+      "textureKey": "shark",
+      "phase": "always",
+      "depth": 0.5,
+      "spawnEverySec": [
+        50,
+        90
+      ],
+      "speedRatioPerSec": 0.045,
+      "heightRatio": 0.1,
+      "scaleRange": [
+        0.8,
+        1.2
+      ],
+      "yBandRatio": [
+        0.68,
+        0.85
+      ],
+      "nightTint": "0x1E2B3C",
+      "depthTint": "0x1C3450",
+      "depthTintStrength": 0.45,
+      "depthFadeRangeRatio": 0.22
+    }
+  ],
+  "palette": {
+    "coral": {
+      "dawn": {
+        "mid": "0xD87A6B",
+        "dark": "0x8B3F3A",
+        "rim": "0xF2A98C"
+      },
+      "midday": {
+        "mid": "0xE08A78",
+        "dark": "0x9C4A3E",
+        "rim": "0xF7B79C"
+      },
+      "sunset": {
+        "mid": "0xE0755C",
+        "dark": "0x8A3B2C",
+        "rim": "0xF4A36E"
+      },
+      "night": {
+        "mid": "0x4A2C34",
+        "dark": "0x2A1820",
+        "rim": "0x6B3A44"
+      }
+    },
+    "island": {
+      "dawn": {
+        "mid": "0x2C6B4E",
+        "dark": "0x143C2C",
+        "rim": "0x9BC59A",
+        "haze": "0xF9D3A0"
+      },
+      "midday": {
+        "mid": "0x2F7B45",
+        "dark": "0x184E30",
+        "rim": "0xBFE6C0",
+        "haze": "0x8FD3EC"
+      },
+      "sunset": {
+        "mid": "0x1E3D30",
+        "dark": "0x102420",
+        "rim": "0xF2955A",
+        "haze": "0xF6C053"
+      },
+      "night": {
+        "mid": "0x14283E",
+        "dark": "0x0B1B2E",
+        "rim": "0x2C4A66",
+        "haze": "0x21324E"
+      }
+    },
+    "cloud": {
+      "dawn": {
+        "mid": "0xF8DCC0",
+        "dark": "0xE7B48C",
+        "rim": "0xFFF0E0"
+      },
+      "midday": {
+        "mid": "0xFFFFFF",
+        "dark": "0xD6E8F2",
+        "rim": "0xFFFFFF"
+      },
+      "sunset": {
+        "mid": "0xF6A968",
+        "dark": "0xD9713F",
+        "rim": "0xFCD9A6"
+      },
+      "night": {
+        "mid": "0x3B4E6E",
+        "dark": "0x27374F",
+        "rim": "0x556C90"
+      }
+    },
+    "foliage": {
+      "dawn": {
+        "mid": "0x1C4636",
+        "dark": "0x0E2B21",
+        "rim": "0x2E6B4E"
+      },
+      "midday": {
+        "mid": "0x1B5A44",
+        "dark": "0x0D3A2C",
+        "rim": "0x2E7B57"
+      },
+      "sunset": {
+        "mid": "0x1A322A",
+        "dark": "0x0C1E19",
+        "rim": "0x5A3826"
+      },
+      "night": {
+        "mid": "0x102437",
+        "dark": "0x081726",
+        "rim": "0x21384F"
+      }
+    },
+    "flower": {
+      "plumeria": {
+        "petal": "0xFFF3D6",
+        "center": "0xF4B434"
+      },
+      "hibiscus": "0xE8674A",
+      "bougainvillea": "0xE85C8A"
+    }
+  },
+  "foliage": {
+    "enabled": true,
+    "swayAmpRad": 0.022,
+    "swayPeriodSec": [
+      7,
+      11
+    ],
+    "cornerScaleRatio": 0.36,
+    "audioSwayGainRad": 0.38,
+    "audioScaleGain": 0.08,
+    "audioSwayThreshold": 0.15,
+    "leafSpriteTintStrength": 0.35
+  },
+  "grain": {
+    "enabled": true,
+    "alpha": 0.07,
+    "blend": "overlay",
+    "scale": 2
+  },
+  "turtle": {
+    "sizePx": 220,
+    "spawnXRatio": 0.4,
+    "flap": {
+      "frontPeriodSec": 1.1,
+      "idlePeriodSec": 1.6,
+      "idleSpeedThresholdRatio": 0.03,
+      "periodLerp": 0.05,
+      "frontUpRad": -0.44,
+      "frontDownRad": 0.61,
+      "backAmplitudeScale": 0.6,
+      "backPhaseOffsetRad": 3.14159,
+      "headTurnRad": 0.05,
+      "headTurnSpeedThresholdRatio": 0.04
+    },
+    "tilt": {
+      "maxTiltRad": 0.22,
+      "velocityToTilt": 0.0024,
+      "smoothing": 0.12
+    },
+    "motionLines": {
+      "count": 3,
+      "thresholdPxPerSec": 35,
+      "maxRefPxPerSec": 170,
+      "baseLenPx": 30,
+      "maxAlpha": 0.72,
+      "color": "0xFFF6E4"
+    },
+    "shadow": {
+      "enabled": true,
+      "color": "0x0A1E2C",
+      "maxAlpha": 0.28
+    },
+    "underwaterTint": {
+      "color": "0x14344C",
+      "maxStrength": 0.62
+    },
+    "bouquet": {
+      "maxStage": 5,
+      "orbsPerStage": [6, 8, 10, 13, 16],
+      "growthScale": [1.0, 1.5, 2.1, 2.8, 3.7],
+      "anchorShiftPerStage": {
+        "x": [0, -10, -22, -38, -58],
+        "y": [0, -6, -16, -28, -44]
+      },
+      "anchorPx": {
+        "x": 580,
+        "y": 250
+      },
+      "sizePx": 300,
+      "finalGlow": {
+        "enabled": true,
+        "color": "0xFFEFC2",
+        "maxAlpha": 0.4,
+        "pulsePeriodSec": 3.2
+      }
+    }
+  },
+  "dive": {
+    "tintColor": "0x0E3A57",
+    "tintMaxAlpha": 0.4,
+    "bubbleRatePerSec": 8,
+    "celestialFadeByDepth": true
+  },
+  "orbs": {
+    "spawnRatePerSecond": 0.5,
+    "color": "0xFFF3CC",
+    "glowRadiusPx": 18,
+    "coreRadiusPx": 6,
+    "driftSpeedRatioPerSec": 0.05,
+    "collectRadiusPx": 54,
+    "yBandRatio": [
+      0.14,
+      0.62
+    ],
+    "lowBiasChance": 0.42,
+    "lowBiasBandRatio": [
+      0.6,
+      0.92
+    ],
+    "maxAlive": 8,
+    "chainWindowSec": 1.7,
+    "chainMax": 5
+  },
+  "contemplative": {
+    "slipstream": {
+      "enabled": true,
+      "depth": 0.82,
+      "spawnEverySec": [
+        24,
+        46
+      ],
+      "poolSize": 3,
+      "streakCount": 16,
+      "bgmFilterBaseHz": 6500,
+      "bgmFilterOpenHz": 20000,
+      "updraftLiftRatio": 0.45,
+      "updraftColWidthRatio": 0.085,
+      "updraftColHeightRatio": 0.52
+    },
+    "skimming": {
+      "enabled": true,
+      "bandTopRatio": 0.085,
+      "bandBottomRatio": 0.006,
+      "thresholdSec": 0.9,
+      "collectRadiusScale": 1.9,
+      "splashPerSec": 14,
+      "rampSec": 1.4
+    },
+    "formation": {
+      "enabled": true,
+      "companionIds": ["dolphin", "bird", "whale"],
+      "formationRadiusRatio": 0.3,
+      "thresholdSec": 0.6,
+      "rampSec": 1.6,
+      "sparklePerSec": 3
+    },
+    "microReactions": {
+      "enabled": true,
+      "manta": {
+        "reactRadiusRatio": 0.16,
+        "durationSec": 1.3,
+        "cooldownSec": 5
+      },
+      "jellyfish": {
+        "reactRadiusRatio": 0.13,
+        "durationSec": 0.9,
+        "cooldownSec": 3
+      }
+    },
+    "orbChain": {
+      "wakeBoostPerLevel": 0.22
+    },
+    "schoolAvoid": {
+      "radiusRatio": 0.15,
+      "strengthPx": 52
+    }
+  },
+  "rareEvents": {
+    "enabled": true,
+    "whaleDurSec": 4.2,
+    "rainDurSec": 15,
+    "rainMaxAlpha": 0.17,
+    "rainStreakCount": 120,
+    "meteorChance": 0.8,
+    "meteorCount": 7
+  },
+  "particles": {
+    "globalCap": 80,
+    "caps": {
+      "bubble": 20,
+      "splash": 10,
+      "wake": 16,
+      "petal": 22,
+      "glint": 24
+    },
+    "bubble": {
+      "riseSpeedPx": [
+        18,
+        44
+      ],
+      "radiusPx": [
+        1.5,
+        4
+      ],
+      "lifeSec": [
+        1.2,
+        2.6
+      ],
+      "color": "0xCFF3FF",
+      "alpha": 0.5,
+      "wobblePx": 8
+    },
+    "splash": {
+      "count": [
+        3,
+        5
+      ],
+      "speedPx": [
+        50,
+        150
+      ],
+      "radiusPx": [
+        1,
+        3
+      ],
+      "lifeSec": [
+        0.4,
+        0.9
+      ],
+      "color": "0xF3FBFF",
+      "gravityPx": 300
+    },
+    "wake": {
+      "spawnPerSec": 12,
+      "radiusPx": [
+        1,
+        3
+      ],
+      "lifeSec": [
+        0.6,
+        1.2
+      ],
+      "color": "0xE6F6F2",
+      "alpha": 0.45
+    },
+    "petal": {
+      "count": [
+        6,
+        12
+      ],
+      "fallSpeedPx": [
+        22,
+        52
+      ],
+      "radiusPx": [
+        2.5,
+        5
+      ],
+      "lifeSec": [
+        3,
+        6
+      ],
+      "colors": [
+        "0xF2955A",
+        "0xFFF3D6",
+        "0xE8674A",
+        "0xE85C8A"
+      ],
+      "swayPx": 34
+    },
+    "glint": {
+      "radiusPx": [1.5, 3],
+      "lifeSec": [0.4, 0.8],
+      "color": "0xFFFFFF"
+    }
+  },
+  "vignette": {
+    "enabled": true,
+    "color": "0x05131f",
+    "strength": 0.42,
+    "diveColor": "0x0A1230",
+    "diveStrength": 0.74,
+    "innerRadiusRatio": 0.68,
+    "outerRadiusRatio": 1.2
+  },
+  "wedding": {
+    "enabled": true,
+    "venueAppearProgress": 0.85,
+    "arriveProgress": 0.93,
+    "arrivalBeatSec": 3.4,
+    "epilogueSec": 40,
+    "epilogueCirclePeriodSec": 11,
+    "islandDepth": 0.3,
+    "archDepth": 0.36,
+    "venueSizeRatio": 0.3,
+    "islandSizeRatio": 0.3,
+    "coupleSizeRatio": 0.19,
+    "targetYRatio": 0.5,
+    "petalBurstIntervalSec": 2.4,
+    "epiloguePetalRatePerSec": 0.9
+  },
+  "audio": {
+    "src": "/bgm.mp3",
+    "loop": false,
+    "volume": 0.85,
+    "sfx": {
+      "masterVolume": 0.5,
+      "eventVolume": 0.32,
+      "samples": {
+        "dive": ["/sfx/dive-01.mp3", "/sfx/dive-02.mp3", "/sfx/dive-03.mp3"],
+        "leap": ["/sfx/leap-01.mp3"],
+        "airplane": ["/sfx/airplane-01.mp3"],
+        "orb": ["/sfx/orb-01.mp3"],
+        "dolphin": ["/sfx/dolphin-01.mp3"],
+        "whale": ["/sfx/whale-01.mp3"]
+      },
+      "sampleGainByName": {
+        "airplane": 0.8
+      }
+    }
+  },
+  "audioReactive": {
+    "enabled": true,
+    "smoothing": 0.34,
+    "baselineRate": 0.02,
+    "bands": {
+      "low": {
+        "hz": [
+          20,
+          150
+        ]
+      },
+      "midLow": {
+        "hz": [
+          150,
+          500
+        ]
+      },
+      "midHigh": {
+        "hz": [
+          1000,
+          4000
+        ]
+      },
+      "high": {
+        "hz": [
+          4000,
+          8000
+        ]
+      }
+    },
+    "sunPulseGain": 6,
+    "waveKickGain": 7,
+    "waveAmplitudeGain": 0.9,
+    "sparkleKickGain": 7,
+    "leafSwayGain": 6,
+    "flapSpeedGain": 1.1,
+    "blinkGain": 2.3,
+    "glintThreshold": 0.5,
+    "glintCount": 10
+  }
+}
