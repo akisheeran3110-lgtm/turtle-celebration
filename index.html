@@ -18,6 +18,14 @@
         overscroll-behavior: none; /* iOS Safariのバウンススクロール抑制 */
         touch-action: none; /* ドラッグ操作をブラウザのスクロールに奪われないように */
       }
+      * {
+        /* 長押しで文字選択の「コピー/検索」メニューが出たり、iOSの
+           画像保存コールアウトが出たりしないように(#タップでcopy/pasteが出る) */
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
       #app {
         width: 100vw;
         height: 100dvh; /* iOS Safariのアドレスバー分の高さ揺れに対応 */
