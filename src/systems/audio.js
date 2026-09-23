@@ -168,18 +168,10 @@ export class BgmPlayer {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) throw new Error('no AudioContext');
-      // #画面録画すると音が割れて低くなる: iPhone(6s以降)の実機ハードウェアは
-      // 48000Hzでしか出力できないが、AudioContextをサンプルレート指定なしで
-      // 作るとiOS側の出力リサンプリングが不安定になり、クラックノイズや
-      // ピッチが下がる症状が出る既知の不具合がある(Web調査で複数の報告を確認)。
-      // ハードウェアのネイティブレートを明示的に指定して、この出力段の
-      // リサンプリング自体を起こさせないようにする。
-      try {
-        this.ctx = new Ctx({ sampleRate: 48000 });
-      } catch {
-        // 指定したサンプルレートが受け付けられない環境向けのフォールバック
-        this.ctx = new Ctx();
-      }
+      // sampleRateを48000に固定してみたが、通常再生(録画なし)まで無音に
+      // なる regression が実機で発生したため撤回。検証不十分なまま踏み込んだ
+      // ことが原因。ブラウザ既定のサンプルレートに任せる、元の形に戻す。
+      this.ctx = new Ctx();
       console.log('[BGM] AudioContext sampleRate=', this.ctx.sampleRate);
       // iOSでは電話の着信やSiri等でAudioContextが 'interrupted' になることがあり、
       // それが絡んでいないか切り分けるためログを残す。
