@@ -105,20 +105,51 @@ export class BgmPlayer {
   }
 
   /**
-   * BGMが再生できる程度まで読み込まれるのを待つ(タップ前のローディング表示用)。
-   * 実機での検証で、ブラウザの canplaythrough(「今の回線速度なら最後まで
-   * 途切れず再生できるはず」という自己申告の見積もり)だけを信用すると、
-   * 実際にはまだ足りておらず再生開始直後に waiting(バッファ切れ)が起きる
-   * ケースが確認された(#ゲージがちゃんと機能してない)。見積もりに頼らず、
-   * 実際に MIN_BUFFER_SEC 秒ぶん手元に届くまで明示的に待つ。
-   * 回線不調等でこれが一生満たされない可能性に備えて上限時間で必ず
-   * 解決する安全弁も入れる(#タップしても始まらない、の再発防止)。
+   * BGMを事前に読み込んでおく(タップ前のローディング表示用)。
+   *
+   * 実機での検証で、<audio preload="auto"> はiOS Safariではタップされる
+   * まで実質バックグラウンド読み込みが進まないことが判明した(#ゲージが
+   * ちゃんと機能してない: canplaythrough/buffered が20秒待っても0のまま)。
+   * <audio> 要素の自動読み込みには頼らず、fetch() でファイル本体を直接
+   * まるごとダウンロードし、Blob URL を作って el.src に差し替える。
+   * fetch() は音声要素向けの読み込み制限を受けないため、確実にタップ前に
+   * ダウンロードを終えられる。タップ時点で全データがメモリ上にあるので、
+   * 以後は途中で待たされる(waiting)ことが構造的に起きなくなる。
+   *
+   * fetch自体が使えない/失敗する場合は、従来の <audio> ネイティブ読み込み
+   * 待ちにフォールバックする(安全弁は20秒のまま維持)。
    * @param {(p:number)=>void} [onProgress] 0..1
    */
-  preload(onProgress) {
+  async preload(onProgress) {
+    if (!this._available) return;
+    try {
+      const resp = await fetch(this.config.src);
+      if (!resp.ok || !resp.body) throw new Error(`fetch not ok: ${resp.status}`);
+      const total = Number(resp.headers.get('content-length')) || 0;
+      const reader = resp.body.getReader();
+      const chunks = [];
+      let received = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.byteLength;
+        if (total) onProgress?.(clamp01(received / total));
+      }
+      const blob = new Blob(chunks, { type: 'audio/mpeg' });
+      this.el.src = URL.createObjectURL(blob);
+      onProgress?.(1);
+      console.log('[BGM] fetchでのpreload完了。size=', received, 'bytes / total=', total);
+    } catch (err) {
+      console.error('[BGM] fetch preloadに失敗、<audio>ネイティブ読み込みにフォールバック:', err?.message);
+      await this._legacyElementPreload(onProgress);
+    }
+  }
+
+  /** preload() のフォールバック。従来の <audio> のバッファ状況を見て待つ方式。 */
+  _legacyElementPreload(onProgress) {
     const MIN_BUFFER_SEC = 45;
     return new Promise((resolve) => {
-      if (!this._available) { resolve(); return; }
       const el = this.el;
       let done = false;
       const bufferedEnd = () => {
@@ -136,7 +167,6 @@ export class BgmPlayer {
         el.removeEventListener('canplaythrough', check);
         el.removeEventListener('error', onErr);
         clearTimeout(timer);
-        console.log('[BGM] preload完了。buffered=', bufferedEnd().toFixed(1), 's');
         resolve();
       };
       const check = () => {
@@ -145,12 +175,12 @@ export class BgmPlayer {
         onProgress?.(clamp01(t ? be / t : 1));
         if (be >= t) finish();
       };
-      const onErr = () => finish(); // 読み込み失敗時も待たせすぎない
+      const onErr = () => finish();
       el.addEventListener('progress', check);
       el.addEventListener('canplaythrough', check);
       el.addEventListener('error', onErr);
-      const timer = setTimeout(finish, 20000); // 安全弁: 20秒で見切りをつける
-      check(); // 既にある程度読み込まれていれば即座に満たされる場合もある
+      const timer = setTimeout(finish, 20000);
+      check();
     });
   }
 
@@ -373,6 +403,7 @@ export class BgmPlayer {
   // ===================== SFX(実サンプル優先 → 無ければ合成、#7/#WS4) =====================
   /** @param {'orb'|'dive'|'leap'|'yacht'|'airplane'|'dolphin'|'whale'} name */
   playSfx(name, arg) {
+    console.log(`[SFX] playSfx('${name}') 呼び出し。el.paused=${this.el.paused}, el.currentTime=${this.el.currentTime.toFixed(2)}, ctx.state=${this.ctx?.state}`);
     if (!this._graph || this.muted || this._ended) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
     // 開始時のBGM再生要求が(モバイルブラウザの制約等で)通らなかった場合の保険。
