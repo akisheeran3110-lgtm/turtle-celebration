@@ -1,14 +1,23 @@
 /**
  * audio.js
  * --------
- * BGM は素の <audio>(HTMLMediaElement)でストリーミング再生し、
- * ユーザー操作(タップ開始)の中で Web Audio グラフを組む:
+ * BGM は AudioBufferSourceNode で再生する(タップ前に fetch() + decodeAudioData()
+ * でファイル全体をデコード済みの AudioBuffer にしておき、タップ時に
+ * createBufferSource() で鳴らす):
  *
- *   <audio> ─ MediaElementSource ─ AnalyserNode ─ bgmGain ─▶ destination
- *                                       │
- *                                  (帯域別振幅の解析タップ。gain より前なので
- *                                   ミュートしても解析は生き続ける)
- *   SFX(合成音)───────────────── sfxGain ──────────────▶ destination
+ *   AudioBufferSourceNode(BGM、再生のたび新規作成) ─┬─▶ AnalyserNode(帯域解析タップ、
+ *                                                    │   出力はどこにも繋がない)
+ *                                                    └─▶ bgmFilter ─ bgmGain ─▶ destination
+ *   SFX(実サンプル/合成音、AudioBufferSourceNode)──────────────── sfxGain ──▶ destination
+ *
+ * 以前は <audio>(HTMLMediaElement)+ createMediaElementSource() で鳴らしていたが、
+ * iOS Safariで (a) resume() が数十秒単位で不安定に遅れる、(b) 画面録画(ReplayKit)
+ * で音声がノイズだけになる、という2つの実機不具合が確認された。Web調査で
+ * 「createMediaElementSource() は iOS で音声劣化の既知の問題があり、
+ * AudioBufferSourceNode(全データを事前デコード)を使えば起きない」という
+ * 報告(Apple Developer Forums)が見つかったため、BGMも全面的にこちらへ移行した。
+ * ファイル全体をメモリに載せる必要があるが、BGMは128kbps・約10.6MBまで
+ * 軽量化済みなので許容範囲。
  *
  * - 編集版・11分04秒(664秒)の1本の音源(`public/bgm.mp3`)。ループなし。
  *   ゲーム本編は約8分30秒(`timeOfDay.durationSeconds`)で終わるので、終了画面に入っても
@@ -16,7 +25,7 @@
  *   (`endSession()`。曲自体が `loop:false` なので最後まで流れたら自然に停止する)。
  * - ミュートは bgmGain を 0 にするだけ(再生・帯域解析は止めない)。
  * - タブ復帰時は 0 → 目標値へ 1〜2 秒フェードイン。
- * - Web Audio が使えない環境では el.volume 直接制御にフォールバック(SFX/解析なし)。
+ * - Web Audio が使えない環境では BGM は諦める(SFXも元々同様のフォールバック方針)。
  */
 export class BgmPlayer {
   constructor(config, reactiveConfig) {
@@ -28,54 +37,35 @@ export class BgmPlayer {
     this._ramp = null;
     this._graph = false;
     this._graphFailed = false;
-
-    const el = new Audio();
-    el.src = config.src;
-    el.loop = config.loop !== false;
-    el.preload = 'auto';
-    el.crossOrigin = 'anonymous';
-    el.volume = this._level; // グラフ成立後は gain 側で制御(el.volume は 1 相当に上げる)
-    this.el = el;
     this._available = true;
-    el.addEventListener('error', () => {
-      console.error('[BGM] <audio> error:', el.error?.code, el.error?.message);
-      this._available = false;
-    });
-    // #効果音が鳴った後にだけBGMが鳴り出す、の原因切り分け用ログ。
-    // 一定期間残す想定(原因特定でき次第まとめて削除する)。
-    for (const ev of ['play', 'playing', 'pause', 'stalled', 'waiting', 'suspend', 'ended']) {
-      el.addEventListener(ev, () => console.log(`[BGM] <audio> event: ${ev} (paused=${el.paused}, currentTime=${el.currentTime.toFixed(2)})`));
-    }
+
+    this._bgmBuffer = null; // decodeAudioData 済みの AudioBuffer(preload()で設定)
+    this._bgmSource = null; // 現在再生中の AudioBufferSourceNode(無ければ null)
+    this._bgmPlaying = false;
+    this._bgmOffset = 0; // 現在の再生区間が始まったバッファ内オフセット(秒)
+    this._bgmStartCtxTime = 0; // その区間を start() した時の ctx.currentTime
 
     // 帯域解析の状態(署名付き偏差 = 各帯域の緩やかな平均からのズレ)
     this._bandNow = { low: 0, midLow: 0, midHigh: 0, high: 0 };
     this._bandBase = { low: 0, midLow: 0, midHigh: 0, high: 0 };
     this._bandSeeded = { low: false, midLow: false, midHigh: false, high: false };
     this.bands = { low: 0, midLow: 0, midHigh: 0, high: 0 };
-
-    // (以前はここで _ensureGraph() を呼び、ページ読み込み時に前もって
-    // AudioContext を作っていたが、実機ログで「ユーザー操作より前に作った
-    // context は resume() が30秒以上効かないことがある」ことが判明したため
-    // 撤回。グラフはタップ処理(start())の中で作る、元の形に戻す。)
   }
 
   /**
    * ctx.resume() を1回呼ぶだけだと、iOS実機で 'running' になるまで数秒〜
    * 数十秒かかることがあり、しかもその所要時間がかなりバラつく(実測: 3秒台の
-   * こともあれば34秒かかることもあった)。効果音を鳴らすたびに resume() が
-   * 再実行されていたため「たまたま効果音を鳴らした回数が多い人ほど早く直る」
-   * という運任せの状態になっていた(#堂々巡り)。ゲームプレイに依存せず、
-   * 一定間隔で機械的に resume() を撃ち続けることで、これを運任せにしない。
+   * こともあれば34秒かかることもあった)。ゲームプレイに依存せず、一定間隔で
+   * 機械的に resume() を撃ち続けることで、これを運任せにしない。
    */
   _kickResumeUntilRunning() {
     if (!this.ctx || this._resumeKicking) return;
     this._resumeKicking = true;
     let attempts = 0;
     const maxAttempts = 60; // 250ms間隔で最大15秒
-    // 無音バッファでのアンロックは最初の1回だけ(#画面録画するとノイズだけになる:
-    // 250ms毎に新しい音声ノードを作り続けるのが、iOSの画面録画(ReplayKit)の
-    // システム音声キャプチャを乱している可能性が高いため、ノード生成の頻度を
-    // 最小限に抑える)。以後は resume() の再試行のみ行う。
+    // 無音バッファでのアンロックは最初の1回だけ(画面録画時に新しい音声ノードを
+    // 頻繁に作り続けるとiOSの画面録画(ReplayKit)のキャプチャを乱すことがあるため、
+    // ノード生成の頻度は最小限に抑える)。以後は resume() の再試行のみ行う。
     try {
       const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
       const src = this.ctx.createBufferSource();
@@ -102,42 +92,40 @@ export class BgmPlayer {
     if (!this._available) return;
     this._ensureGraph();
     this._kickResumeUntilRunning();
-    // #効果音が鳴らないとBGMが鳴らない: ctx.resume() を await してから el.play() を
-    // 呼ぶと、el.play() の呼び出しが「ユーザー操作の直接の延長」ではなく
-    // 「awaitを挟んだ後の非同期処理」とみなされ、一部のモバイルブラウザで
-    // NotAllowedError として拒否されることがある(拒否されると _available=false
-    // になり、以後BGMは二度と再生されない)。resume() の完了を待たず、
-    // play() も同じ呼び出しの中で同時に発行することで、どちらもユーザー操作の
-    // 直接の延長として扱われるようにする。
-    const resumePromise = this.ctx && this.ctx.state === 'suspended'
-      ? this.ctx.resume()
-      : Promise.resolve();
-    const playPromise = this.el.play();
-    try {
-      await Promise.all([resumePromise, playPromise]);
-      // eslint-disable-next-line no-console
-      console.log('[BGM] start() OK. ctx.state=', this.ctx?.state, 'el.paused=', this.el.paused);
-    } catch (err) {
-      // #なぜBGMが鳴らないか特定するため、握りつぶさず理由を残す
-      console.error('[BGM] start() failed:', err?.name, err?.message, 'ctx.state=', this.ctx?.state);
-      this._available = false;
+    if (this.ctx && this.ctx.state === 'suspended') {
+      try {
+        await this.ctx.resume();
+      } catch {
+        // resumeが失敗/タイムアウトしても _kickResumeUntilRunning が裏で再試行を続ける
+      }
+    }
+    if (this._bgmBuffer) {
+      this._playBgmFrom(0);
+      console.log('[BGM] start() OK. ctx.state=', this.ctx?.state);
+    } else {
+      console.error('[BGM] start() 時点でバッファ未準備(preload失敗の可能性)');
     }
   }
 
   /**
    * BGMを事前に読み込んでおく(タップ前のローディング表示用)。
    *
-   * 実機での検証で、<audio preload="auto"> はiOS Safariではタップされる
-   * まで実質バックグラウンド読み込みが進まないことが判明した(#ゲージが
-   * ちゃんと機能してない: canplaythrough/buffered が20秒待っても0のまま)。
-   * <audio> 要素の自動読み込みには頼らず、fetch() でファイル本体を直接
-   * まるごとダウンロードし、Blob URL を作って el.src に差し替える。
-   * fetch() は音声要素向けの読み込み制限を受けないため、確実にタップ前に
-   * ダウンロードを終えられる。タップ時点で全データがメモリ上にあるので、
-   * 以後は途中で待たされる(waiting)ことが構造的に起きなくなる。
+   * 実機での検証で分かったこと:
+   *  - <audio preload="auto"> はiOS Safariではタップされるまで実質
+   *    バックグラウンド読み込みが進まない(canplaythrough/bufferedが
+   *    20秒待っても0のまま)。
+   *  - <audio> + createMediaElementSource() の組み合わせはiOSで音声劣化・
+   *    画面録画時のノイズ化の既知の問題がある(Apple Developer Forums)。
+   * この2点から、<audio>要素には一切頼らず fetch() でファイル本体を直接
+   * まるごとダウンロードし、decodeAudioData() で AudioBuffer に変換する
+   * 方式にした。デコードは実際の再生用 AudioContext(まだタップ前で
+   * 存在しない)ではなく、その場限りの OfflineAudioContext で行う
+   * (実機ログで「タップより前にAudioContextを作るとresume()が30秒以上
+   * 不安定になる」ことが分かっているため、本番用contextの生成はタップ時
+   * まで遅らせたい)。
    *
-   * fetch自体が使えない/失敗する場合は、従来の <audio> ネイティブ読み込み
-   * 待ちにフォールバックする(安全弁は20秒のまま維持)。
+   * fetch/decodeに失敗した場合はBGMなしで進む(安全弁: 呼び出し側は
+   * どのみち待たせすぎないよう上位でタイムアウトを持つ想定)。
    * @param {(p:number)=>void} [onProgress] 0..1
    */
   async preload(onProgress) {
@@ -154,54 +142,23 @@ export class BgmPlayer {
         if (done) break;
         chunks.push(value);
         received += value.byteLength;
-        if (total) onProgress?.(clamp01(received / total));
+        // デコード分の余地を残して90%までで報告する
+        if (total) onProgress?.(clamp01((received / total) * 0.9));
       }
-      const blob = new Blob(chunks, { type: 'audio/mpeg' });
-      this.el.src = URL.createObjectURL(blob);
+      const merged = new Uint8Array(received);
+      let offset = 0;
+      for (const c of chunks) {
+        merged.set(c, offset);
+        offset += c.length;
+      }
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const decodeCtx = new OfflineCtx(2, 1, 44100);
+      this._bgmBuffer = await decodeCtx.decodeAudioData(merged.buffer);
       onProgress?.(1);
-      console.log('[BGM] fetchでのpreload完了。size=', received, 'bytes / total=', total);
+      console.log('[BGM] fetch+decodeでのpreload完了。duration=', this._bgmBuffer.duration.toFixed(1), 's, bytes=', received);
     } catch (err) {
-      console.error('[BGM] fetch preloadに失敗、<audio>ネイティブ読み込みにフォールバック:', err?.message);
-      await this._legacyElementPreload(onProgress);
+      console.error('[BGM] preloadに失敗、BGMなしで進みます:', err?.message);
     }
-  }
-
-  /** preload() のフォールバック。従来の <audio> のバッファ状況を見て待つ方式。 */
-  _legacyElementPreload(onProgress) {
-    const MIN_BUFFER_SEC = 45;
-    return new Promise((resolve) => {
-      const el = this.el;
-      let done = false;
-      const bufferedEnd = () => {
-        try {
-          return el.buffered.length ? el.buffered.end(el.buffered.length - 1) : 0;
-        } catch {
-          return 0;
-        }
-      };
-      const target = () => Math.min(MIN_BUFFER_SEC, el.duration || MIN_BUFFER_SEC);
-      const finish = () => {
-        if (done) return;
-        done = true;
-        el.removeEventListener('progress', check);
-        el.removeEventListener('canplaythrough', check);
-        el.removeEventListener('error', onErr);
-        clearTimeout(timer);
-        resolve();
-      };
-      const check = () => {
-        const be = bufferedEnd();
-        const t = target();
-        onProgress?.(clamp01(t ? be / t : 1));
-        if (be >= t) finish();
-      };
-      const onErr = () => finish();
-      el.addEventListener('progress', check);
-      el.addEventListener('canplaythrough', check);
-      el.addEventListener('error', onErr);
-      const timer = setTimeout(finish, 20000);
-      check();
-    });
   }
 
   _ensureGraph() {
@@ -211,12 +168,10 @@ export class BgmPlayer {
       if (!Ctx) throw new Error('no AudioContext');
       this.ctx = new Ctx();
       // iOSでは電話の着信やSiri等でAudioContextが 'interrupted' になることがあり、
-      // それが今回の症状(効果音のタイミングでだけBGMが鳴り出す)に絡んでいないか
-      // 切り分けるためログを残す。
+      // それが絡んでいないか切り分けるためログを残す。
       this.ctx.addEventListener('statechange', () => {
         console.log('[BGM] ctx.statechange →', this.ctx.state);
       });
-      this.srcNode = this.ctx.createMediaElementSource(this.el);
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 2048;
       this.analyser.smoothingTimeConstant = 0.35; // 0.7だと反応が鈍いので下げて素早く追従させる
@@ -224,22 +179,17 @@ export class BgmPlayer {
       this.bgmGain.gain.value = this._level;
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.value = (this.config.sfx?.masterVolume ?? 0.5);
-      // スリップストリームで「開く」ローパス(解析は filter より前でタップ)
+      // スリップストリームで「開く」ローパス
       this.bgmFilter = this.ctx.createBiquadFilter();
       this.bgmFilter.type = 'lowpass';
       this.bgmFilter.frequency.value = 20000;
 
-      this.el.volume = 1;
-      // analyserは帯域解析専用の「横から覗き見る」タップにする(#画面録画で
-      // 音声が正しく入るように: 出力に至る本線上に不要なノードを挟まない
-      // ほど、iOSの画面録画(ReplayKit)によるシステム音声キャプチャとの
-      // 相性トラブルを避けやすい、という考え方に基づく単純化)。
-      // analyser自身の出力はどこにも繋がない(getByteFrequencyDataで読むだけ)。
-      this.srcNode.connect(this.analyser);
-      this.srcNode.connect(this.bgmFilter);
       this.bgmFilter.connect(this.bgmGain);
       this.bgmGain.connect(this.ctx.destination);
       this.sfxGain.connect(this.ctx.destination);
+      // analyserはBGMのAudioBufferSourceNodeが作られるたび _playBgmFrom() 内で
+      // 個別に繋ぐ(常設のsrcNodeが無いため)。出力はどこにも繋がない
+      // (getByteFrequencyDataで読むだけの「横から覗き見る」タップ)。
 
       this._freq = new Uint8Array(this.analyser.frequencyBinCount);
       this._graph = true;
@@ -249,8 +199,49 @@ export class BgmPlayer {
     } catch (err) {
       console.error('[BGM] _ensureGraph() failed:', err?.name, err?.message);
       this._graphFailed = true;
-      this.el.volume = this.muted ? 0 : this._level;
     }
+  }
+
+  /**
+   * BGMをバッファ内の offset(秒)から再生開始する。既に鳴っている区間があれば
+   * 止めてから新しい AudioBufferSourceNode を作る(BufferSourceNodeは使い捨てで、
+   * 一時停止/再開のたびに作り直す必要がある)。
+   */
+  _playBgmFrom(offsetSec) {
+    if (!this.ctx || !this._bgmBuffer) return;
+    if (this._bgmSource) {
+      try {
+        this._bgmSource.onended = null;
+        this._bgmSource.stop();
+      } catch {
+        // 既に止まっている場合など
+      }
+      this._bgmSource = null;
+    }
+    const dur = this._bgmBuffer.duration;
+    const safeOffset = Math.max(0, Math.min(offsetSec, Math.max(0, dur - 0.05)));
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._bgmBuffer;
+    src.loop = this.config.loop === true; // このゲームは既定でループなし
+    src.connect(this.analyser);
+    src.connect(this.bgmFilter);
+    src.onended = () => {
+      if (this._bgmSource === src) {
+        this._bgmPlaying = false;
+        this._bgmSource = null;
+      }
+    };
+    src.start(0, safeOffset);
+    this._bgmSource = src;
+    this._bgmStartCtxTime = this.ctx.currentTime;
+    this._bgmOffset = safeOffset;
+    this._bgmPlaying = true;
+  }
+
+  /** BGMの現在の再生位置(秒)。停止中は一時停止した位置のまま。 */
+  get _bgmCurrentTime() {
+    if (!this._bgmPlaying || !this.ctx) return this._bgmOffset;
+    return this._bgmOffset + (this.ctx.currentTime - this._bgmStartCtxTime);
   }
 
   /**
@@ -302,15 +293,13 @@ export class BgmPlayer {
     return true;
   }
 
-  // --- 出力レベル(bgm)。グラフがあれば bgmGain、無ければ el.volume ---
+  // --- 出力レベル(bgm) ---
   _outGet() {
-    return this._graph ? this.bgmGain.gain.value : this.el.volume;
+    return this._graph ? this.bgmGain.gain.value : 0;
   }
 
   _outSet(v) {
-    const c = clamp01(v);
-    if (this._graph) this.bgmGain.gain.value = c;
-    else this.el.volume = c;
+    if (this._graph) this.bgmGain.gain.value = clamp01(v);
   }
 
   _target() {
@@ -328,17 +317,28 @@ export class BgmPlayer {
   }
 
   pause() {
-    if (!this.el.paused) this.el.pause();
+    if (!this._bgmPlaying) return;
+    const ct = this._bgmCurrentTime;
+    if (this._bgmSource) {
+      try {
+        this._bgmSource.onended = null;
+        this._bgmSource.stop();
+      } catch {
+        // noop
+      }
+      this._bgmSource = null;
+    }
+    this._bgmOffset = ct;
+    this._bgmPlaying = false;
   }
 
   /** タブ復帰など。0 から目標値へフェードイン。 */
   resume() {
     if (!this._available || this.muted || this._ended) return;
-    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
-    const wasPaused = this.el.paused;
-    if (wasPaused) {
+    if (this.ctx && this.ctx.state === 'suspended') this._kickResumeUntilRunning();
+    if (!this._bgmPlaying && this._bgmBuffer) {
       this._outSet(0);
-      this.el.play().catch(() => {});
+      this._playBgmFrom(this._bgmOffset);
     }
     this._rampOut(this._target(), 1.6);
   }
@@ -428,18 +428,8 @@ export class BgmPlayer {
   // ===================== SFX(実サンプル優先 → 無ければ合成、#7/#WS4) =====================
   /** @param {'orb'|'dive'|'leap'|'yacht'|'airplane'|'dolphin'|'whale'} name */
   playSfx(name, arg) {
-    console.log(`[SFX] playSfx('${name}') 呼び出し。el.paused=${this.el.paused}, el.currentTime=${this.el.currentTime.toFixed(2)}, ctx.state=${this.ctx?.state}`);
     if (!this._graph || this.muted || this._ended) return;
     if (this.ctx.state === 'suspended') this._kickResumeUntilRunning();
-    // 開始時のBGM再生要求が(モバイルブラウザの制約等で)通らなかった場合の保険。
-    // 効果音が鳴らせる=ユーザー操作の流れの中にいる状況なので、ここでBGMの
-    // 再生も改めて試みる(#効果音が鳴らないとBGMが鳴らない、の恒久対策)。
-    if (this._available && this.el.paused && !this._ended) {
-      console.log('[BGM] playSfx()経由でel.paused=trueを検知、再生をリトライ');
-      this.el.play()
-        .then(() => console.log('[BGM] リトライ成功'))
-        .catch((err) => console.error('[BGM] リトライも失敗:', err?.name, err?.message));
-    }
     const t = this.ctx.currentTime;
     const cfg = this.config.sfx ?? {};
     const v = cfg.eventVolume ?? 0.35;
