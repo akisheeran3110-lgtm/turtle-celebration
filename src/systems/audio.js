@@ -26,7 +26,19 @@
  * - ミュートは bgmGain を 0 にするだけ(再生・帯域解析は止めない)。
  * - タブ復帰時は 0 → 目標値へ 1〜2 秒フェードイン。
  * - Web Audio が使えない環境では BGM は諦める(SFXも元々同様のフォールバック方針)。
+ *
+ * iOSの「消音スイッチ」対策: iOS Safariには「Web Audio API単体の出力は本体側面の
+ * 消音スイッチに従って無音化されるが、<audio>要素(HTMLMediaElement)の再生は
+ * 消音スイッチを無視して鳴らせる」という仕様がある(WebKit既知の挙動)。
+ * BGMをAudioBufferSourceNode化した際に<audio>要素を廃止したことで、この
+ * 「消音スイッチを無視する」性質も失われてしまった。定番の回避策として、
+ * ごく短い無音の<audio>をループ再生しておくと、ページ全体の音声セッションが
+ * <audio>要素側のカテゴリになり、Web Audio側の出力も消音スイッチを無視できる
+ * ようになる(参考: https://github.com/feross/unmute-ios-audio)。
  */
+const SILENT_WAV_DATA_URI =
+  'data:audio/wav;base64,UklGRtYBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgATElTVBoAAABJTkZPSVNGVA0AAABMYXZmNjMuMS4xMDEAAGRhdGGQAQAAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+
 export class BgmPlayer {
   constructor(config, reactiveConfig) {
     this.config = config;
@@ -88,8 +100,23 @@ export class BgmPlayer {
     tick();
   }
 
+  /** #サイレントモードにすると音が消える対策。詳細はファイル先頭コメント参照。 */
+  _unmuteSilentSwitch() {
+    if (this._silentEl) return;
+    try {
+      const el = new Audio(SILENT_WAV_DATA_URI);
+      el.loop = true;
+      el.volume = 0.0001; // 完全に0だとブラウザによっては最適化で止められることがあるための保険
+      el.play().catch(() => {});
+      this._silentEl = el;
+    } catch {
+      // 失敗しても致命的ではないので無視(その場合サイレントスイッチ中は無音のまま)
+    }
+  }
+
   async start() {
     if (!this._available) return;
+    this._unmuteSilentSwitch();
     this._ensureGraph();
     this._kickResumeUntilRunning();
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -321,6 +348,7 @@ export class BgmPlayer {
   }
 
   pause() {
+    this._silentEl?.pause();
     if (!this._bgmPlaying) return;
     const ct = this._bgmCurrentTime;
     if (this._bgmSource) {
@@ -339,6 +367,7 @@ export class BgmPlayer {
   /** タブ復帰など。0 から目標値へフェードイン。 */
   resume() {
     if (!this._available || this.muted || this._ended) return;
+    this._silentEl?.play().catch(() => {});
     if (this.ctx && this.ctx.state === 'suspended') this._kickResumeUntilRunning();
     if (!this._bgmPlaying && this._bgmBuffer) {
       this._outSet(0);
