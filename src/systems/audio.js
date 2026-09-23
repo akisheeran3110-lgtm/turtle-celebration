@@ -59,26 +59,45 @@ export class BgmPlayer {
     // 撤回。グラフはタップ処理(start())の中で作る、元の形に戻す。)
   }
 
-  async start() {
-    if (!this._available) return;
-    this._ensureGraph();
-    // iOS Safari等では、AudioContext.resume() + <audio>.play() だけだと
-    // 実際の音声出力経路が開通しないことがあり、AudioBufferSourceNode を
-    // ユーザー操作の延長で一度 start() するまで音が出ないことがある。
-    // (このアンロックはグラフ生成そのものより後、ここ = 実際のタップ処理の
-    // 中で行う必要がある。ページ読み込み時に前もってグラフだけ作っておく
-    // ように変更したため、アンロックはここに残す)
-    if (this.ctx) {
+  /**
+   * ctx.resume() を1回呼ぶだけだと、iOS実機で 'running' になるまで数秒〜
+   * 数十秒かかることがあり、しかもその所要時間がかなりバラつく(実測: 3秒台の
+   * こともあれば34秒かかることもあった)。効果音を鳴らすたびに resume() が
+   * 再実行されていたため「たまたま効果音を鳴らした回数が多い人ほど早く直る」
+   * という運任せの状態になっていた(#堂々巡り)。ゲームプレイに依存せず、
+   * 一定間隔で機械的に resume() を撃ち続けることで、これを運任せにしない。
+   */
+  _kickResumeUntilRunning() {
+    if (!this.ctx || this._resumeKicking) return;
+    this._resumeKicking = true;
+    let attempts = 0;
+    const maxAttempts = 60; // 250ms間隔で最大15秒
+    const tick = () => {
+      attempts++;
+      if (!this.ctx || this.ctx.state === 'running' || attempts > maxAttempts) {
+        this._resumeKicking = false;
+        console.log(`[BGM] resumeキック終了。試行${attempts}回、最終state=${this.ctx?.state}`);
+        return;
+      }
+      this.ctx.resume().catch(() => {});
       try {
-        const unlockBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
-        const unlockSrc = this.ctx.createBufferSource();
-        unlockSrc.buffer = unlockBuf;
-        unlockSrc.connect(this.ctx.destination);
-        unlockSrc.start(0);
+        const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.ctx.destination);
+        src.start(0);
       } catch {
         // 無音アンロックに失敗しても致命的ではないので握りつぶす
       }
-    }
+      setTimeout(tick, 250);
+    };
+    tick();
+  }
+
+  async start() {
+    if (!this._available) return;
+    this._ensureGraph();
+    this._kickResumeUntilRunning();
     // #効果音が鳴らないとBGMが鳴らない: ctx.resume() を await してから el.play() を
     // 呼ぶと、el.play() の呼び出しが「ユーザー操作の直接の延長」ではなく
     // 「awaitを挟んだ後の非同期処理」とみなされ、一部のモバイルブラウザで
@@ -402,7 +421,7 @@ export class BgmPlayer {
   playSfx(name, arg) {
     console.log(`[SFX] playSfx('${name}') 呼び出し。el.paused=${this.el.paused}, el.currentTime=${this.el.currentTime.toFixed(2)}, ctx.state=${this.ctx?.state}`);
     if (!this._graph || this.muted || this._ended) return;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state === 'suspended') this._kickResumeUntilRunning();
     // 開始時のBGM再生要求が(モバイルブラウザの制約等で)通らなかった場合の保険。
     // 効果音が鳴らせる=ユーザー操作の流れの中にいる状況なので、ここでBGMの
     // 再生も改めて試みる(#効果音が鳴らないとBGMが鳴らない、の恒久対策)。
