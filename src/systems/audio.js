@@ -37,7 +37,15 @@ export class BgmPlayer {
     el.volume = this._level; // グラフ成立後は gain 側で制御(el.volume は 1 相当に上げる)
     this.el = el;
     this._available = true;
-    el.addEventListener('error', () => { this._available = false; });
+    el.addEventListener('error', () => {
+      console.error('[BGM] <audio> error:', el.error?.code, el.error?.message);
+      this._available = false;
+    });
+    // #効果音が鳴った後にだけBGMが鳴り出す、の原因切り分け用ログ。
+    // 一定期間残す想定(原因特定でき次第まとめて削除する)。
+    for (const ev of ['play', 'playing', 'pause', 'stalled', 'waiting', 'suspend', 'ended']) {
+      el.addEventListener(ev, () => console.log(`[BGM] <audio> event: ${ev} (paused=${el.paused}, currentTime=${el.currentTime.toFixed(2)})`));
+    }
 
     // 帯域解析の状態(署名付き偏差 = 各帯域の緩やかな平均からのズレ)
     this._bandNow = { low: 0, midLow: 0, midHigh: 0, high: 0 };
@@ -87,7 +95,11 @@ export class BgmPlayer {
     const playPromise = this.el.play();
     try {
       await Promise.all([resumePromise, playPromise]);
-    } catch {
+      // eslint-disable-next-line no-console
+      console.log('[BGM] start() OK. ctx.state=', this.ctx?.state, 'el.paused=', this.el.paused);
+    } catch (err) {
+      // #なぜBGMが鳴らないか特定するため、握りつぶさず理由を残す
+      console.error('[BGM] start() failed:', err?.name, err?.message, 'ctx.state=', this.ctx?.state);
       this._available = false;
     }
   }
@@ -138,6 +150,12 @@ export class BgmPlayer {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) throw new Error('no AudioContext');
       this.ctx = new Ctx();
+      // iOSでは電話の着信やSiri等でAudioContextが 'interrupted' になることがあり、
+      // それが今回の症状(効果音のタイミングでだけBGMが鳴り出す)に絡んでいないか
+      // 切り分けるためログを残す。
+      this.ctx.addEventListener('statechange', () => {
+        console.log('[BGM] ctx.statechange →', this.ctx.state);
+      });
       this.srcNode = this.ctx.createMediaElementSource(this.el);
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 2048;
@@ -162,7 +180,9 @@ export class BgmPlayer {
       this._graph = true;
       this._sfxBuf = {};
       this._loadSfxSamples();
-    } catch {
+      console.log('[BGM] _ensureGraph() OK. ctx.state=', this.ctx.state);
+    } catch (err) {
+      console.error('[BGM] _ensureGraph() failed:', err?.name, err?.message);
       this._graphFailed = true;
       this.el.volume = this.muted ? 0 : this._level;
     }
@@ -349,7 +369,10 @@ export class BgmPlayer {
     // 効果音が鳴らせる=ユーザー操作の流れの中にいる状況なので、ここでBGMの
     // 再生も改めて試みる(#効果音が鳴らないとBGMが鳴らない、の恒久対策)。
     if (this._available && this.el.paused && !this._ended) {
-      this.el.play().catch(() => {});
+      console.log('[BGM] playSfx()経由でel.paused=trueを検知、再生をリトライ');
+      this.el.play()
+        .then(() => console.log('[BGM] リトライ成功'))
+        .catch((err) => console.error('[BGM] リトライも失敗:', err?.name, err?.message));
     }
     const t = this.ctx.currentTime;
     const cfg = this.config.sfx ?? {};
