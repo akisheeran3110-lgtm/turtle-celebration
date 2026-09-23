@@ -1,4 +1,5 @@
 import { Application, Assets } from 'pixi.js';
+import 'pixi.js/prepare'; // renderer.prepare を有効化(タップ前にテクスチャをGPUへ転送しておく用)
 import { ParallaxScene } from './scene/ParallaxScene.js';
 import { BgmPlayer } from './systems/audio.js';
 import { createUI } from './ui/overlay.js';
@@ -143,19 +144,20 @@ async function bootstrap() {
     const m = path.match(/deco-(hibiscus-[\w-]+)\.png$/);
     if (m) { hibiscusUrls[m[1]] = url; urls.push(url); }
   }
-  // 画像(0〜70%)+ BGMの再生準備(70〜100%)を1本のゲージにまとめる。
-  // BGM(11分の1本もの)はタップ後にすぐ鳴らしたいので、"Tap to Begin" が
-  // 出る時点で既に再生準備が整っている状態にする(#音楽が流れるまで待たせたい)。
+  // 画像(0〜55%)+ BGMの再生準備(55〜80%)+ 全テクスチャのGPU転送(80〜100%)を
+  // 1本のゲージにまとめる。BGM(11分の1本もの)はタップ後にすぐ鳴らしたいので、
+  // "Tap to Begin" が出る時点で既に再生準備が整っている状態にする
+  // (#音楽が流れるまで待たせたい)。
   let imgP = 0;
   let bgmP = 0;
-  const updateProgress = () => ui.setProgress(imgP * 0.7 + bgmP * 0.3);
+  let gpuP = 0;
+  const updateProgress = () => ui.setProgress(imgP * 0.55 + bgmP * 0.25 + gpuP * 0.2);
   const loaded = await Assets.load(urls, (p) => { imgP = p; updateProgress(); });
   imgP = 1;
   updateProgress();
   await bgm.preload((p) => { bgmP = p; updateProgress(); });
   bgmP = 1;
   updateProgress();
-  ui.ready();
 
   const assets = {
     turtle: {
@@ -242,6 +244,21 @@ async function bootstrap() {
   app.stage.addChild(scene.stage);
   scene.resize(app.screen.width, app.screen.height);
   app.renderer.on('resize', (w, h) => scene.resize(w, h));
+
+  // タップした瞬間に大量のスプライトが初めて画面に出て、その場でGPUへの
+  // テクスチャ転送が一気に走って固まって見える(それに巻き込まれてBGM/SFXも
+  // 遅れる)ことがあるため、タップ前のこの時点で先に全部転送しておく
+  // (#タップ後にしばらく固まる・音が遅れる)。
+  gpuP = 0.5;
+  updateProgress();
+  try {
+    await app.renderer.prepare.upload(scene.stage);
+  } catch {
+    // prepare が使えない環境でも致命的ではないので無視して進める
+  }
+  gpuP = 1;
+  updateProgress();
+  ui.ready();
 
   // タップ = BGM 再生 + 時間帯サイクル / 生き物の開始
   let inputArmed = false;
