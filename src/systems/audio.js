@@ -44,11 +44,36 @@ export class BgmPlayer {
     this._bandBase = { low: 0, midLow: 0, midHigh: 0, high: 0 };
     this._bandSeeded = { low: false, midLow: false, midHigh: false, high: false };
     this.bands = { low: 0, midLow: 0, midHigh: 0, high: 0 };
+
+    // MediaElementAudioSourceNode は、<audio> が(preload等で)ある程度
+    // バッファ/再生し始めた"後"に作成すると、WebKit系ブラウザで
+    // 内部的な出力経路がうまく繋がらず無音のままになることがある
+    // (SFXが鳴った瞬間だけBGMも鳴り出すように見えたのはこれが濃厚な原因)。
+    // <audio> がまだ何も読み込んでいないこの時点でグラフを作ってしまう
+    // ことで、その経路の問題を避ける(#効果音が鳴らないとBGMが鳴らない)。
+    this._ensureGraph();
   }
 
   async start() {
     if (!this._available) return;
     this._ensureGraph();
+    // iOS Safari等では、AudioContext.resume() + <audio>.play() だけだと
+    // 実際の音声出力経路が開通しないことがあり、AudioBufferSourceNode を
+    // ユーザー操作の延長で一度 start() するまで音が出ないことがある。
+    // (このアンロックはグラフ生成そのものより後、ここ = 実際のタップ処理の
+    // 中で行う必要がある。ページ読み込み時に前もってグラフだけ作っておく
+    // ように変更したため、アンロックはここに残す)
+    if (this.ctx) {
+      try {
+        const unlockBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+        const unlockSrc = this.ctx.createBufferSource();
+        unlockSrc.buffer = unlockBuf;
+        unlockSrc.connect(this.ctx.destination);
+        unlockSrc.start(0);
+      } catch {
+        // 無音アンロックに失敗しても致命的ではないので握りつぶす
+      }
+    }
     try {
       if (this.ctx && this.ctx.state === 'suspended') await this.ctx.resume();
       await this.el.play();
@@ -103,20 +128,6 @@ export class BgmPlayer {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) throw new Error('no AudioContext');
       this.ctx = new Ctx();
-      // iOS Safari等では、ctx.resume()+<audio>.play()(MediaElementSource経由)だけだと
-      // 実音声出力が「サイレントに再生されている」状態のまま鳴らず、AudioBufferSourceNode を
-      // 一度startするまで音が出ないことがある(効果音が鳴った途端にBGMも鳴り出すのはこれが原因)。
-      // ユーザー操作の延長であるこのタイミングで無音バッファを鳴らし、出力経路を確実に
-      // 開通させておく(#音楽が鳴らない/効果音が鳴らないとBGMも鳴らない)。
-      try {
-        const unlockBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
-        const unlockSrc = this.ctx.createBufferSource();
-        unlockSrc.buffer = unlockBuf;
-        unlockSrc.connect(this.ctx.destination);
-        unlockSrc.start(0);
-      } catch {
-        // 無音アンロックに失敗しても致命的ではないので握りつぶす
-      }
       this.srcNode = this.ctx.createMediaElementSource(this.el);
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 2048;
