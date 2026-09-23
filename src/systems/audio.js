@@ -230,8 +230,13 @@ export class BgmPlayer {
       this.bgmFilter.frequency.value = 20000;
 
       this.el.volume = 1;
+      // analyserは帯域解析専用の「横から覗き見る」タップにする(#画面録画で
+      // 音声が正しく入るように: 出力に至る本線上に不要なノードを挟まない
+      // ほど、iOSの画面録画(ReplayKit)によるシステム音声キャプチャとの
+      // 相性トラブルを避けやすい、という考え方に基づく単純化)。
+      // analyser自身の出力はどこにも繋がない(getByteFrequencyDataで読むだけ)。
       this.srcNode.connect(this.analyser);
-      this.analyser.connect(this.bgmFilter);
+      this.srcNode.connect(this.bgmFilter);
       this.bgmFilter.connect(this.bgmGain);
       this.bgmGain.connect(this.ctx.destination);
       this.sfxGain.connect(this.ctx.destination);
