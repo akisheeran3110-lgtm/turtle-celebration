@@ -53,13 +53,10 @@ export class BgmPlayer {
     this._bandSeeded = { low: false, midLow: false, midHigh: false, high: false };
     this.bands = { low: 0, midLow: 0, midHigh: 0, high: 0 };
 
-    // MediaElementAudioSourceNode は、<audio> が(preload等で)ある程度
-    // バッファ/再生し始めた"後"に作成すると、WebKit系ブラウザで
-    // 内部的な出力経路がうまく繋がらず無音のままになることがある
-    // (SFXが鳴った瞬間だけBGMも鳴り出すように見えたのはこれが濃厚な原因)。
-    // <audio> がまだ何も読み込んでいないこの時点でグラフを作ってしまう
-    // ことで、その経路の問題を避ける(#効果音が鳴らないとBGMが鳴らない)。
-    this._ensureGraph();
+    // (以前はここで _ensureGraph() を呼び、ページ読み込み時に前もって
+    // AudioContext を作っていたが、実機ログで「ユーザー操作より前に作った
+    // context は resume() が30秒以上効かないことがある」ことが判明したため
+    // 撤回。グラフはタップ処理(start())の中で作る、元の形に戻す。)
   }
 
   async start() {
