@@ -74,9 +74,19 @@ export class BgmPlayer {
         // 無音アンロックに失敗しても致命的ではないので握りつぶす
       }
     }
+    // #効果音が鳴らないとBGMが鳴らない: ctx.resume() を await してから el.play() を
+    // 呼ぶと、el.play() の呼び出しが「ユーザー操作の直接の延長」ではなく
+    // 「awaitを挟んだ後の非同期処理」とみなされ、一部のモバイルブラウザで
+    // NotAllowedError として拒否されることがある(拒否されると _available=false
+    // になり、以後BGMは二度と再生されない)。resume() の完了を待たず、
+    // play() も同じ呼び出しの中で同時に発行することで、どちらもユーザー操作の
+    // 直接の延長として扱われるようにする。
+    const resumePromise = this.ctx && this.ctx.state === 'suspended'
+      ? this.ctx.resume()
+      : Promise.resolve();
+    const playPromise = this.el.play();
     try {
-      if (this.ctx && this.ctx.state === 'suspended') await this.ctx.resume();
-      await this.el.play();
+      await Promise.all([resumePromise, playPromise]);
     } catch {
       this._available = false;
     }
@@ -335,6 +345,12 @@ export class BgmPlayer {
   playSfx(name, arg) {
     if (!this._graph || this.muted || this._ended) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
+    // 開始時のBGM再生要求が(モバイルブラウザの制約等で)通らなかった場合の保険。
+    // 効果音が鳴らせる=ユーザー操作の流れの中にいる状況なので、ここでBGMの
+    // 再生も改めて試みる(#効果音が鳴らないとBGMが鳴らない、の恒久対策)。
+    if (this._available && this.el.paused && !this._ended) {
+      this.el.play().catch(() => {});
+    }
     const t = this.ctx.currentTime;
     const cfg = this.config.sfx ?? {};
     const v = cfg.eventVolume ?? 0.35;
