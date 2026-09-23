@@ -106,41 +106,51 @@ export class BgmPlayer {
 
   /**
    * BGMが再生できる程度まで読み込まれるのを待つ(タップ前のローディング表示用)。
-   * canplaythrough を待つが、回線不調等でこれが一生発火しない可能性に備えて
-   * 上限時間で必ず解決する安全弁を入れる(#タップしても始まらない、の再発防止)。
+   * 実機での検証で、ブラウザの canplaythrough(「今の回線速度なら最後まで
+   * 途切れず再生できるはず」という自己申告の見積もり)だけを信用すると、
+   * 実際にはまだ足りておらず再生開始直後に waiting(バッファ切れ)が起きる
+   * ケースが確認された(#ゲージがちゃんと機能してない)。見積もりに頼らず、
+   * 実際に MIN_BUFFER_SEC 秒ぶん手元に届くまで明示的に待つ。
+   * 回線不調等でこれが一生満たされない可能性に備えて上限時間で必ず
+   * 解決する安全弁も入れる(#タップしても始まらない、の再発防止)。
    * @param {(p:number)=>void} [onProgress] 0..1
    */
   preload(onProgress) {
+    const MIN_BUFFER_SEC = 45;
     return new Promise((resolve) => {
       if (!this._available) { resolve(); return; }
       const el = this.el;
-      if (el.readyState >= 4) { onProgress?.(1); resolve(); return; }
       let done = false;
+      const bufferedEnd = () => {
+        try {
+          return el.buffered.length ? el.buffered.end(el.buffered.length - 1) : 0;
+        } catch {
+          return 0;
+        }
+      };
+      const target = () => Math.min(MIN_BUFFER_SEC, el.duration || MIN_BUFFER_SEC);
       const finish = () => {
         if (done) return;
         done = true;
-        el.removeEventListener('canplaythrough', onReady);
-        el.removeEventListener('progress', onProg);
+        el.removeEventListener('progress', check);
+        el.removeEventListener('canplaythrough', check);
         el.removeEventListener('error', onErr);
         clearTimeout(timer);
+        console.log('[BGM] preload完了。buffered=', bufferedEnd().toFixed(1), 's');
         resolve();
       };
-      const onProg = () => {
-        try {
-          if (el.duration && el.buffered.length) {
-            const buffered = el.buffered.end(el.buffered.length - 1);
-            onProgress?.(clamp01(buffered / el.duration));
-          }
-        } catch {
-          // buffered/duration が未確定な瞬間は無視
-        }
+      const check = () => {
+        const be = bufferedEnd();
+        const t = target();
+        onProgress?.(clamp01(t ? be / t : 1));
+        if (be >= t) finish();
       };
-      const onReady = () => { onProgress?.(1); finish(); };
       const onErr = () => finish(); // 読み込み失敗時も待たせすぎない
-      el.addEventListener('canplaythrough', onReady);
-      el.addEventListener('progress', onProg);
+      el.addEventListener('progress', check);
+      el.addEventListener('canplaythrough', check);
       el.addEventListener('error', onErr);
       const timer = setTimeout(finish, 20000); // 安全弁: 20秒で見切りをつける
+      check(); // 既にある程度読み込まれていれば即座に満たされる場合もある
     });
   }
 
