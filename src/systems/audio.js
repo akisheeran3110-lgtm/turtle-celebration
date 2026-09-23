@@ -103,6 +103,20 @@ export class BgmPlayer {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) throw new Error('no AudioContext');
       this.ctx = new Ctx();
+      // iOS Safari等では、ctx.resume()+<audio>.play()(MediaElementSource経由)だけだと
+      // 実音声出力が「サイレントに再生されている」状態のまま鳴らず、AudioBufferSourceNode を
+      // 一度startするまで音が出ないことがある(効果音が鳴った途端にBGMも鳴り出すのはこれが原因)。
+      // ユーザー操作の延長であるこのタイミングで無音バッファを鳴らし、出力経路を確実に
+      // 開通させておく(#音楽が鳴らない/効果音が鳴らないとBGMも鳴らない)。
+      try {
+        const unlockBuf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+        const unlockSrc = this.ctx.createBufferSource();
+        unlockSrc.buffer = unlockBuf;
+        unlockSrc.connect(this.ctx.destination);
+        unlockSrc.start(0);
+      } catch {
+        // 無音アンロックに失敗しても致命的ではないので握りつぶす
+      }
       this.srcNode = this.ctx.createMediaElementSource(this.el);
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 2048;
