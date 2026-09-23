@@ -143,8 +143,18 @@ async function bootstrap() {
     const m = path.match(/deco-(hibiscus-[\w-]+)\.png$/);
     if (m) { hibiscusUrls[m[1]] = url; urls.push(url); }
   }
-  const loaded = await Assets.load(urls, (p) => ui.setProgress(p));
-  ui.setProgress(1);
+  // 画像(0〜70%)+ BGMの再生準備(70〜100%)を1本のゲージにまとめる。
+  // BGM(11分の1本もの)はタップ後にすぐ鳴らしたいので、"Tap to Begin" が
+  // 出る時点で既に再生準備が整っている状態にする(#音楽が流れるまで待たせたい)。
+  let imgP = 0;
+  let bgmP = 0;
+  const updateProgress = () => ui.setProgress(imgP * 0.7 + bgmP * 0.3);
+  const loaded = await Assets.load(urls, (p) => { imgP = p; updateProgress(); });
+  imgP = 1;
+  updateProgress();
+  await bgm.preload((p) => { bgmP = p; updateProgress(); });
+  bgmP = 1;
+  updateProgress();
   ui.ready();
 
   const assets = {

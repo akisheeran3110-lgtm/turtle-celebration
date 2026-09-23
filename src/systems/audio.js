@@ -57,6 +57,46 @@ export class BgmPlayer {
     }
   }
 
+  /**
+   * BGMが再生できる程度まで読み込まれるのを待つ(タップ前のローディング表示用)。
+   * canplaythrough を待つが、回線不調等でこれが一生発火しない可能性に備えて
+   * 上限時間で必ず解決する安全弁を入れる(#タップしても始まらない、の再発防止)。
+   * @param {(p:number)=>void} [onProgress] 0..1
+   */
+  preload(onProgress) {
+    return new Promise((resolve) => {
+      if (!this._available) { resolve(); return; }
+      const el = this.el;
+      if (el.readyState >= 4) { onProgress?.(1); resolve(); return; }
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        el.removeEventListener('canplaythrough', onReady);
+        el.removeEventListener('progress', onProg);
+        el.removeEventListener('error', onErr);
+        clearTimeout(timer);
+        resolve();
+      };
+      const onProg = () => {
+        try {
+          if (el.duration && el.buffered.length) {
+            const buffered = el.buffered.end(el.buffered.length - 1);
+            onProgress?.(clamp01(buffered / el.duration));
+          }
+        } catch {
+          // buffered/duration が未確定な瞬間は無視
+        }
+      };
+      const onReady = () => { onProgress?.(1); finish(); };
+      const onErr = () => finish(); // 読み込み失敗時も待たせすぎない
+      el.addEventListener('canplaythrough', onReady);
+      el.addEventListener('progress', onProg);
+      el.addEventListener('error', onErr);
+      const timer = setTimeout(finish, 20000); // 安全弁: 20秒で見切りをつける
+    });
+  }
+
   _ensureGraph() {
     if (this._graph || this._graphFailed) return;
     try {
