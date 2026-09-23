@@ -72,6 +72,19 @@ export class BgmPlayer {
     this._resumeKicking = true;
     let attempts = 0;
     const maxAttempts = 60; // 250ms間隔で最大15秒
+    // 無音バッファでのアンロックは最初の1回だけ(#画面録画するとノイズだけになる:
+    // 250ms毎に新しい音声ノードを作り続けるのが、iOSの画面録画(ReplayKit)の
+    // システム音声キャプチャを乱している可能性が高いため、ノード生成の頻度を
+    // 最小限に抑える)。以後は resume() の再試行のみ行う。
+    try {
+      const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(this.ctx.destination);
+      src.start(0);
+    } catch {
+      // 無音アンロックに失敗しても致命的ではないので握りつぶす
+    }
     const tick = () => {
       attempts++;
       if (!this.ctx || this.ctx.state === 'running' || attempts > maxAttempts) {
@@ -80,15 +93,6 @@ export class BgmPlayer {
         return;
       }
       this.ctx.resume().catch(() => {});
-      try {
-        const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
-        const src = this.ctx.createBufferSource();
-        src.buffer = buf;
-        src.connect(this.ctx.destination);
-        src.start(0);
-      } catch {
-        // 無音アンロックに失敗しても致命的ではないので握りつぶす
-      }
       setTimeout(tick, 250);
     };
     tick();
