@@ -151,10 +151,8 @@ export class BgmPlayer {
         merged.set(c, offset);
         offset += c.length;
       }
-      // 再生用AudioContext(48000Hz固定、下記参照)と同じレートでデコードしておくと、
-      // 再生時にAudioBufferSourceNode側でのリサンプリングも一切発生しなくなる。
       const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-      const decodeCtx = new OfflineCtx(2, 1, 48000);
+      const decodeCtx = new OfflineCtx(2, 1, 44100);
       this._bgmBuffer = await decodeCtx.decodeAudioData(merged.buffer);
       onProgress?.(1);
       console.log('[BGM] fetch+decodeでのpreload完了。duration=', this._bgmBuffer.duration.toFixed(1), 's, bytes=', received);
